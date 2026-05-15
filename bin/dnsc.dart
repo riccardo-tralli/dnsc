@@ -1,57 +1,30 @@
-import 'package:args/args.dart';
+import "package:args/args.dart";
 
-const String version = '0.0.1';
+part "parser.dart";
 
-ArgParser buildParser() {
-  return ArgParser()
-    ..addFlag(
-      'help',
-      abbr: 'h',
-      negatable: false,
-      help: 'Print this usage information.',
-    )
-    ..addFlag(
-      'verbose',
-      abbr: 'v',
-      negatable: false,
-      help: 'Show additional command output.',
-    )
-    ..addFlag('version', negatable: false, help: 'Print the tool version.');
-}
-
-void printUsage(ArgParser argParser) {
-  print('Usage: dart dnsc.dart <flags> [arguments]');
-  print(argParser.usage);
-}
+const String version = "0.0.1";
 
 void main(List<String> arguments) {
-  final ArgParser argParser = buildParser();
+  print("dnsc - DNS Checker CLI Tool");
+  print("Version: $version");
+  print("");
+
+  final ArgParser parser = buildParser();
+
   try {
-    final ArgResults results = argParser.parse(arguments);
-    bool verbose = false;
+    final ArgResults results = parser.parse(arguments);
 
-    // Process the parsed arguments.
-    if (results.flag('help')) {
-      printUsage(argParser);
+    if (results.flag("help")) {
+      printUsage(parser);
       return;
     }
-    if (results.flag('version')) {
-      print('dnsc version: $version');
+    if (results.flag("version")) {
+      print("dnsc version: $version");
       return;
-    }
-    if (results.flag('verbose')) {
-      verbose = true;
-    }
-
-    // Act on the arguments provided.
-    print('Positional arguments: ${results.rest}');
-    if (verbose) {
-      print('[VERBOSE] All arguments: ${results.arguments}');
     }
   } on FormatException catch (e) {
-    // Print usage information if an invalid argument was provided.
     print(e.message);
-    print('');
-    printUsage(argParser);
+    print("");
+    printUsage(parser);
   }
 }
