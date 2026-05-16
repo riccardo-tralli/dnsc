@@ -9,6 +9,8 @@ part "parser.dart";
 Future<void> main(List<String> arguments) async {
   final ArgParser parser = buildParser();
 
+  DnsLookup dns;
+
   try {
     // Parse arguments
     final ArgResults args = parser.parse(arguments);
@@ -25,13 +27,17 @@ Future<void> main(List<String> arguments) async {
       return;
     }
 
+    // Configuration
+    dns = DnsLookup(
+      nameserver: args.option("server"),
+      timeout: int.tryParse(args.option("timeout") ?? "1") ?? 1,
+      simple: args.flag("simple"),
+    );
+
     // Handle lookup commands
-    switch (args.command?.name) {
+    switch (args.command!.name) {
       case "a":
-        await DnsLookup.a(
-          args.command!.option("record"),
-          simple: args.flag("simple"),
-        );
+        await dns.a(args.command!.option("record"));
         break;
       default:
         print("Unknown command. Use --help for usage information.");

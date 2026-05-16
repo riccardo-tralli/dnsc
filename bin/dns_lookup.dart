@@ -2,14 +2,26 @@ import 'package:dnsolve/dnsolve.dart';
 import "misc/ascii_table.dart";
 
 class DnsLookup {
-  static final DNSolve _dns = DNSolve();
+  final String? nameserver;
+  final int timeout;
+  final bool simple;
 
-  static Future<List<Record>> _query(String record, RecordType type) async {
+  late DNSolve _dns;
+
+  DnsLookup({this.nameserver, this.timeout = 1, this.simple = false}) {
+    if (nameserver == null || nameserver == "" || nameserver!.isEmpty) {
+      _dns = DNSolve();
+    } else {
+      _dns = DNSolve(server: DNSServer.custom(nameserver!));
+    }
+  }
+
+  Future<List<Record>> _query(String record, RecordType type) async {
     try {
       final ResolveResponse res = await _dns.lookup(
         record,
         type: type,
-        timeout: const Duration(seconds: 1),
+        timeout: Duration(seconds: timeout),
       );
       if (res.answer?.records?.isEmpty ?? true) {
         return [];
@@ -20,9 +32,10 @@ class DnsLookup {
     }
   }
 
-  static Future<void> a(String? record, {bool simple = false}) async {
-    if (record == null) {
-      throw ArgumentError("Record cannot be null");
+  Future<void> a(String? record) async {
+    if (record == null || record == "" || record.isEmpty) {
+      print("Record cannot be null!");
+      return;
     }
     try {
       final List<Record> res = await _query(record, RecordType.A);
