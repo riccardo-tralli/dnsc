@@ -4,12 +4,14 @@ version: 0.0.1
 # repository: https://github.com/my_org/my_repo
 
 environment:
-  sdk: ^3.11.4
+    sdk: ^3.11.4
 
 # Add regular dependencies here.
 dependencies:
-  args: ^2.7.0
+    args: ^2.7.0
+    dnsolve:
+        path: ../dnsolve
 
 dev_dependencies:
-  lints: ^6.0.0
-  test: ^1.25.6
+    lints: ^6.0.0
+    test: ^1.25.6
