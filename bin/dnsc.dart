@@ -1,30 +1,41 @@
+import "dart:developer";
+
 import "package:args/args.dart";
+import "dns_lookup.dart";
+import "misc/app.dart";
 
 part "parser.dart";
 
-const String version = "0.0.1";
-
-void main(List<String> arguments) {
-  print("dnsc - DNS Checker CLI Tool");
-  print("Version: $version");
-  print("");
-
+Future<void> main(List<String> arguments) async {
   final ArgParser parser = buildParser();
 
   try {
-    final ArgResults results = parser.parse(arguments);
+    // Parse arguments
+    final ArgResults args = parser.parse(arguments);
 
-    if (results.flag("help")) {
+    // Help
+    if (args.flag("help")) {
+      App.logo();
+      print("");
       printUsage(parser);
       return;
     }
-    if (results.flag("version")) {
-      print("dnsc version: $version");
+    if (args.flag("version")) {
+      App.version();
       return;
     }
-  } on FormatException catch (e) {
-    print(e.message);
-    print("");
+
+    // Handle lookup commands
+    switch (args.command?.name) {
+      case "a":
+        await DnsLookup.a(args.command!.option("domain"));
+        break;
+      default:
+        print("Unknown command. Use --help for usage information.");
+    }
+  } on FormatException catch (_) {
     printUsage(parser);
+  } catch (e) {
+    log("An error occurred: $e");
   }
 }
