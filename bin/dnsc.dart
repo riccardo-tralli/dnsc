@@ -28,7 +28,10 @@ Future<void> main(List<String> arguments) async {
     // Handle lookup commands
     switch (args.command?.name) {
       case "a":
-        await DnsLookup.a(args.command!.option("domain"));
+        await DnsLookup.a(
+          args.command!.option("record"),
+          simple: args.flag("simple"),
+        );
         break;
       default:
         print("Unknown command. Use --help for usage information.");

@@ -1,4 +1,5 @@
 import 'package:dnsolve/dnsolve.dart';
+import "misc/ascii_table.dart";
 
 class DnsLookup {
   static final DNSolve _dns = DNSolve();
@@ -19,7 +20,7 @@ class DnsLookup {
     }
   }
 
-  static Future<void> a(String? record) async {
+  static Future<void> a(String? record, {bool simple = false}) async {
     if (record == null) {
       throw ArgumentError("Record cannot be null");
     }
@@ -28,10 +29,19 @@ class DnsLookup {
       if (res.isEmpty) {
         print("No A records found for $record");
       } else {
-        print(res.map((e) => e.data).join("\n"));
+        if (simple) {
+          print(res.map((e) => e.data).join("\n"));
+          return;
+        }
+        AsciiTable(
+          columns: ["Name", "Type", "TTL", "Data"],
+          rows: res
+              .map((r) => [r.name, r.rType.name, r.ttl.toString(), r.data])
+              .toList(),
+        ).printTable();
       }
     } catch (e) {
-      print("Error looking up A record: $e");
+      print(e);
     }
   }
 }

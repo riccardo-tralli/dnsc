@@ -10,6 +10,13 @@ ArgParser buildParser() {
       help: "Print this usage information.",
     )
     ..addFlag("version", negatable: false, help: "Print the tool version.")
+    // Configuration
+    ..addFlag(
+      "simple",
+      abbr: "s",
+      negatable: false,
+      help: "Print simple output without tables.",
+    )
     // * Lookup
     ..addCommand(
       "a",
