@@ -35,10 +35,63 @@ ArgParser buildParser() {
         mandatory: true,
         help: "DNS record to lookup.",
       ),
+    )
+    ..addCommand(
+      "aaaa",
+      ArgParser()..addOption(
+        "record",
+        abbr: "r",
+        mandatory: true,
+        help: "DNS record to lookup.",
+      ),
+    )
+    ..addCommand(
+      "cname",
+      ArgParser()..addOption(
+        "record",
+        abbr: "r",
+        mandatory: true,
+        help: "DNS record to lookup.",
+      ),
+    )
+    ..addCommand(
+      "mx",
+      ArgParser()..addOption(
+        "record",
+        abbr: "r",
+        mandatory: true,
+        help: "DNS record to lookup.",
+      ),
+    )
+    ..addCommand(
+      "ns",
+      ArgParser()..addOption(
+        "record",
+        abbr: "r",
+        mandatory: true,
+        help: "DNS record to lookup.",
+      ),
+    )
+    ..addCommand(
+      "txt",
+      ArgParser()..addOption(
+        "record",
+        abbr: "r",
+        mandatory: true,
+        help: "DNS record to lookup.",
+      ),
     );
 }
 
 void printUsage(ArgParser argParser) {
-  print("Usage: dnsc <flags> [arguments]");
+  print("Usage: dnsc <flags> [command] -r <record>");
   print(argParser.usage);
+  print("");
+  print("Commands: ${argParser.commands.entries.map((e) => e.key).join(", ")}");
+  print("");
+  print("Examples:");
+  print("  dnsc a -r example.com");
+  print("  dnsc mx -r example.com");
+  print("  dnsc cname -r example.com --simple");
+  print("  dnsc cname -r example.com -t 5 -s 1.1.1.1");
 }

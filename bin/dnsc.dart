@@ -1,6 +1,7 @@
 import "dart:developer";
 
 import "package:args/args.dart";
+import "package:dnsolve/dnsolve.dart";
 import "dns_lookup.dart";
 import "misc/app.dart";
 
@@ -37,7 +38,22 @@ Future<void> main(List<String> arguments) async {
     // Handle lookup commands
     switch (args.command!.name) {
       case "a":
-        await dns.a(args.command!.option("record"));
+        await dns.typed(args.command!.option("record"), RecordType.A);
+        break;
+      case "aaaa":
+        await dns.typed(args.command!.option("record"), RecordType.aaaa);
+        break;
+      case "cname":
+        await dns.typed(args.command!.option("record"), RecordType.cname);
+        break;
+      case "mx":
+        await dns.mx(args.command!.option("record"));
+        break;
+      case "ns":
+        await dns.typed(args.command!.option("record"), RecordType.ns);
+        break;
+      case "txt":
+        await dns.typed(args.command!.option("record"), RecordType.txt);
         break;
       default:
         print("Unknown command. Use --help for usage information.");
