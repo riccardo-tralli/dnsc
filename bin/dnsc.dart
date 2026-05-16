@@ -35,25 +35,44 @@ Future<void> main(List<String> arguments) async {
       simple: args.flag("simple"),
     );
 
-    // Handle lookup commands
+    // Domain validation
+    String? domain = args.arguments
+        .where(
+          (e) =>
+              // Ignore flags, commands, and options
+              !parser.commands.containsKey(e) &&
+              !parser.options.containsKey(e) &&
+              !e.startsWith("-") &&
+              // Basic domain validation
+              RegExp(
+                r"^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$",
+              ).hasMatch(e),
+        )
+        .lastOrNull;
+    if (domain == null) {
+      print("No valid domain provided. Use --help for usage information.");
+      return;
+    }
+
+    // Lookup commands
     switch (args.command!.name) {
       case "a":
-        await dns.typed(args.command!.option("record"), RecordType.A);
+        await dns.typed(domain, RecordType.A);
         break;
       case "aaaa":
-        await dns.typed(args.command!.option("record"), RecordType.aaaa);
+        await dns.typed(domain, RecordType.aaaa);
         break;
       case "cname":
-        await dns.typed(args.command!.option("record"), RecordType.cname);
+        await dns.typed(domain, RecordType.cname);
         break;
       case "mx":
-        await dns.mx(args.command!.option("record"));
+        await dns.mx(domain);
         break;
       case "ns":
-        await dns.typed(args.command!.option("record"), RecordType.ns);
+        await dns.typed(domain, RecordType.ns);
         break;
       case "txt":
-        await dns.typed(args.command!.option("record"), RecordType.txt);
+        await dns.typed(domain, RecordType.txt);
         break;
       default:
         print("Unknown command. Use --help for usage information.");
