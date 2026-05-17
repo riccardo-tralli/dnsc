@@ -28,6 +28,11 @@ Future<void> main(List<String> arguments) async {
       return;
     }
 
+    if (args.command == null) {
+      print("No command provided. Use --help for usage information.");
+      return;
+    }
+
     // Configuration
     dns = DnsLookup(
       nameserver: args.option("server"),
@@ -43,9 +48,9 @@ Future<void> main(List<String> arguments) async {
               !parser.commands.containsKey(e) &&
               !parser.options.containsKey(e) &&
               !e.startsWith("-") &&
-              // Basic domain validation
+              // FQDN validation
               RegExp(
-                r"^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$",
+                r"^(?:[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\.)+[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?$",
               ).hasMatch(e),
         )
         .lastOrNull;
