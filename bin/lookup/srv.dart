@@ -13,11 +13,16 @@ class Srv {
       return;
     }
     try {
-      final List<SRVRecord> res =
+      List<SRVRecord> res =
           await dns.query(record, RecordType.srv) as List<SRVRecord>;
       if (res.isEmpty) {
         print("No SRV records found for $record");
       } else {
+        if (dns.first) {
+          res = [res.first];
+        } else if (dns.last) {
+          res = [res.last];
+        }
         if (dns.simple) {
           print(
             res

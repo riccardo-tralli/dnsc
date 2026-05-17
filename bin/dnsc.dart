@@ -44,6 +44,8 @@ Future<void> main(List<String> arguments) async {
       simple: args.flag("simple"),
       full: args.flag("full"),
       count: args.flag("count"),
+      first: args.flag("first"),
+      last: args.flag("last"),
     );
 
     // Domain validation

@@ -38,6 +38,16 @@ ArgParser buildParser() {
       abbr: "t",
       help: "Set the timeout for DNS lookups in seconds.",
     )
+    ..addFlag(
+      "first",
+      negatable: false,
+      help: "Only print the first record of the answer.",
+    )
+    ..addFlag(
+      "last",
+      negatable: false,
+      help: "Only print the last record of the answer.",
+    )
     // * Lookup
     ..addCommand("a")
     ..addCommand("aaaa")

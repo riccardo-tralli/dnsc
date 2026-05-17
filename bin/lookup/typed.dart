@@ -24,6 +24,11 @@ class Typed {
       if (res.isEmpty) {
         print("No ${type.name.toUpperCase()} records found for $record");
       } else {
+        if (dns.first) {
+          res = [res.first];
+        } else if (dns.last) {
+          res = [res.last];
+        }
         if (dns.simple) {
           print(
             res

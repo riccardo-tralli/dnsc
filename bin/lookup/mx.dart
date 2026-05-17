@@ -13,11 +13,16 @@ class Mx {
       return;
     }
     try {
-      final List<MXRecord> res =
+      List<MXRecord> res =
           await dns.query(record, RecordType.mx) as List<MXRecord>;
       if (res.isEmpty) {
         print("No MX records found for $record");
       } else {
+        if (dns.first) {
+          res = [res.first];
+        } else if (dns.last) {
+          res = [res.last];
+        }
         if (dns.simple) {
           print(
             res
