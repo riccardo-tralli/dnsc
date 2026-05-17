@@ -11,20 +11,26 @@ ArgParser buildParser() {
     )
     ..addFlag("version", negatable: false, help: "Print the tool version.")
     // * Configuration
+    ..addFlag(
+      "full",
+      abbr: "f",
+      negatable: false,
+      help: "Print full output without cutting.",
+    )
     ..addOption(
       "nameserver",
       abbr: "n",
       help: "Use a custom nameserver for lookups.",
     )
-    ..addOption(
-      "timeout",
-      abbr: "t",
-      help: "Set the timeout for DNS lookups in seconds.",
-    )
     ..addFlag(
       "simple",
       negatable: false,
       help: "Print simple output without tables.",
+    )
+    ..addOption(
+      "timeout",
+      abbr: "t",
+      help: "Set the timeout for DNS lookups in seconds.",
     )
     // * Lookup
     ..addCommand("a")

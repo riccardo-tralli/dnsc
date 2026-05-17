@@ -25,7 +25,17 @@ class Typed {
         print("No ${type.name.toUpperCase()} records found for $record");
       } else {
         if (dns.simple) {
-          print(res.map((e) => e.data).join("\n"));
+          print(
+            res
+                .map(
+                  (e) => dns.full
+                      ? e.data
+                      : e.data.length > 50
+                      ? "${e.data.substring(0, 50)}..."
+                      : e.data,
+                )
+                .join("\n"),
+          );
           return;
         }
         AsciiTable(
@@ -33,10 +43,18 @@ class Typed {
           rows: res
               .map(
                 (r) => [
-                  r.name,
+                  dns.full
+                      ? r.name
+                      : r.name.length > 35
+                      ? "${r.name.substring(0, 35)}..."
+                      : r.name,
                   r.rType.name.toUpperCase(),
                   r.ttl.toString(),
-                  r.data,
+                  dns.full
+                      ? r.data
+                      : r.data.length > 50
+                      ? "${r.data.substring(0, 50)}..."
+                      : r.data,
                 ],
               )
               .toList(),

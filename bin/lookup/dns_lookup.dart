@@ -4,10 +4,16 @@ class DnsLookup {
   final String? nameserver;
   final int timeout;
   final bool simple;
+  final bool full;
 
   late final DNSolve _dns;
 
-  DnsLookup({this.nameserver, this.timeout = 1, this.simple = false}) {
+  DnsLookup({
+    this.nameserver,
+    this.timeout = 1,
+    this.simple = false,
+    this.full = false,
+  }) {
     if (nameserver == null || nameserver == "" || nameserver!.isEmpty) {
       _dns = DNSolve();
     } else {
