@@ -59,7 +59,7 @@ class Soa {
         ).printTable();
       }
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 }

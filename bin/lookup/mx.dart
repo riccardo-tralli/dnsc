@@ -32,7 +32,7 @@ class Mx {
         ).printTable();
       }
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 }

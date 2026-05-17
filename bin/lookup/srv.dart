@@ -45,7 +45,7 @@ class Srv {
         ).printTable();
       }
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 }

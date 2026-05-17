@@ -43,7 +43,7 @@ class Typed {
         ).printTable();
       }
     } catch (e) {
-      print(e);
+      rethrow;
     }
   }
 }
