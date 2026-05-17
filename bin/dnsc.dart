@@ -38,12 +38,12 @@ Future<void> main(List<String> arguments) async {
     }
 
     // Configuration
-    // TODO: add record counter
     dns = DnsLookup(
       nameserver: args.option("nameserver"),
       timeout: int.tryParse(args.option("timeout") ?? "1") ?? 1,
       simple: args.flag("simple"),
       full: args.flag("full"),
+      count: args.flag("count"),
     );
 
     // Domain validation

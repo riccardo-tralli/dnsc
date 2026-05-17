@@ -23,7 +23,7 @@ class Soa {
             res
                 .map(
                   (e) =>
-                      "${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
+                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
                 )
                 .join("\n"),
           );
@@ -31,6 +31,7 @@ class Soa {
         }
         AsciiTable(
           columns: [
+            if (dns.count) "#",
             "Name",
             "Type",
             "Primary",
@@ -44,6 +45,7 @@ class Soa {
           rows: res
               .map(
                 (r) => [
+                  if (dns.count) "${res.indexOf(r) + 1}",
                   r.fqdn,
                   "SOA",
                   r.mname,

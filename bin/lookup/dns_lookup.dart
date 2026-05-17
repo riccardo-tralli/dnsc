@@ -5,6 +5,7 @@ class DnsLookup {
   final int timeout;
   final bool simple;
   final bool full;
+  final bool count;
 
   late final DNSolve _dns;
 
@@ -13,6 +14,7 @@ class DnsLookup {
     this.timeout = 1,
     this.simple = false,
     this.full = false,
+    this.count = false,
   }) {
     if (nameserver == null || nameserver == "" || nameserver!.isEmpty) {
       _dns = DNSolve();

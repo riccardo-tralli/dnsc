@@ -19,16 +19,35 @@ class Mx {
         print("No MX records found for $record");
       } else {
         if (dns.simple) {
-          print(res.map((e) => "${e.priority} ${e.exchange}").join("\n"));
+          print(
+            res
+                .map(
+                  (e) =>
+                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${e.priority} ${e.exchange}",
+                )
+                .join("\n"),
+          );
           return;
         }
         AsciiTable(
-          columns: ["Name", "Type", "Priority", "Exchange"],
+          columns: [if (dns.count) "#", "Name", "Type", "Priority", "Exchange"],
           rows:
               res
-                  .map((r) => [r.fqdn, "MX", r.priority.toString(), r.exchange])
+                  .map(
+                    (r) => [
+                      if (dns.count) "${res.indexOf(r) + 1}",
+                      r.fqdn,
+                      "MX",
+                      r.priority.toString(),
+                      r.exchange,
+                    ],
+                  )
                   .toList()
-                ..sort((a, b) => int.parse(a[2]).compareTo(int.parse(b[2]))),
+                ..sort(
+                  (a, b) => int.parse(
+                    a[dns.count ? 3 : 2],
+                  ).compareTo(int.parse(b[dns.count ? 3 : 2])),
+                ),
         ).printTable();
       }
     } catch (e) {

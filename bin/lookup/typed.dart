@@ -28,21 +28,23 @@ class Typed {
           print(
             res
                 .map(
-                  (e) => dns.full
-                      ? e.data
-                      : e.data.length > 50
-                      ? "${e.data.substring(0, 50)}..."
-                      : e.data,
+                  (e) =>
+                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${dns.full
+                          ? e.data
+                          : e.data.length > 50
+                          ? "${e.data.substring(0, 50)}..."
+                          : e.data}",
                 )
                 .join("\n"),
           );
           return;
         }
         AsciiTable(
-          columns: ["Name", "Type", "TTL", "Data"],
+          columns: [if (dns.count) "#", "Name", "Type", "TTL", "Data"],
           rows: res
               .map(
                 (r) => [
+                  if (dns.count) "${res.indexOf(r) + 1}",
                   dns.full
                       ? r.name
                       : r.name.length > 35

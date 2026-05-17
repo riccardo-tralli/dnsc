@@ -21,17 +21,29 @@ class Srv {
         if (dns.simple) {
           print(
             res
-                .map((e) => "${e.priority} ${e.weight} ${e.port} ${e.target}")
+                .map(
+                  (e) =>
+                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${e.priority} ${e.weight} ${e.port} ${e.target}",
+                )
                 .join("\n"),
           );
           return;
         }
         AsciiTable(
-          columns: ["Name", "Type", "Priority", "Weight", "Port", "Target"],
+          columns: [
+            if (dns.count) "#",
+            "Name",
+            "Type",
+            "Priority",
+            "Weight",
+            "Port",
+            "Target",
+          ],
           rows:
               res
                   .map(
                     (r) => [
+                      if (dns.count) "${res.indexOf(r) + 1}",
                       r.fqdn,
                       "SRV",
                       r.priority.toString(),
@@ -41,7 +53,11 @@ class Srv {
                     ],
                   )
                   .toList()
-                ..sort((a, b) => int.parse(a[2]).compareTo(int.parse(b[2]))),
+                ..sort(
+                  (a, b) => int.parse(
+                    a[dns.count ? 3 : 2],
+                  ).compareTo(int.parse(b[dns.count ? 3 : 2])),
+                ),
         ).printTable();
       }
     } catch (e) {

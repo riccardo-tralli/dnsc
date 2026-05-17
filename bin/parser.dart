@@ -12,6 +12,12 @@ ArgParser buildParser() {
     ..addFlag("version", negatable: false, help: "Print the tool version.")
     // * Configuration
     ..addFlag(
+      "count",
+      abbr: "c",
+      negatable: false,
+      help: "Prepend record number to each output line.",
+    )
+    ..addFlag(
       "full",
       abbr: "f",
       negatable: false,
