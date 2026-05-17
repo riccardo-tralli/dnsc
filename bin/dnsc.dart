@@ -2,7 +2,11 @@ import "dart:developer";
 
 import "package:args/args.dart";
 import "package:dnsolve/dnsolve.dart";
-import "dns_lookup.dart";
+import "lookup/dns_lookup.dart";
+import "lookup/typed.dart";
+import "lookup/mx.dart";
+import "lookup/soa.dart";
+import "lookup/srv.dart";
 import "misc/app.dart";
 
 part "parser.dart";
@@ -10,7 +14,7 @@ part "parser.dart";
 Future<void> main(List<String> arguments) async {
   final ArgParser parser = buildParser();
 
-  DnsLookup dns;
+  late final DnsLookup dns;
 
   try {
     // Parse arguments
@@ -62,22 +66,31 @@ Future<void> main(List<String> arguments) async {
     // Lookup commands
     switch (args.command!.name) {
       case "a":
-        await dns.typed(domain, RecordType.A);
+        await Typed(dns).query(domain, RecordType.A);
         break;
       case "aaaa":
-        await dns.typed(domain, RecordType.aaaa);
+        await Typed(dns).query(domain, RecordType.aaaa);
         break;
       case "cname":
-        await dns.typed(domain, RecordType.cname);
+        await Typed(dns).query(domain, RecordType.cname);
         break;
       case "mx":
-        await dns.mx(domain);
+        await Mx(dns).query(domain);
         break;
       case "ns":
-        await dns.typed(domain, RecordType.ns);
+        await Typed(dns).query(domain, RecordType.ns);
+        break;
+      case "ptr":
+        await Typed(dns).query(domain, RecordType.ptr);
+        break;
+      case "soa":
+        await Soa(dns).query(domain);
+        break;
+      case "srv":
+        await Srv(dns).query(domain);
         break;
       case "txt":
-        await dns.typed(domain, RecordType.txt);
+        await Typed(dns).query(domain, RecordType.txt);
         break;
       default:
         print("Unknown command. Use --help for usage information.");

@@ -32,6 +32,9 @@ ArgParser buildParser() {
     ..addCommand("cname")
     ..addCommand("mx")
     ..addCommand("ns")
+    ..addCommand("ptr")
+    ..addCommand("soa")
+    ..addCommand("srv")
     ..addCommand("txt");
 }
 
