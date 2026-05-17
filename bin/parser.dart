@@ -69,7 +69,8 @@ ArgParser buildParser() {
         mandatory: true,
       ),
     )
-    ..addCommand("dmarc");
+    ..addCommand("dmarc")
+    ..addCommand("m365");
 }
 
 void printUsage(ArgParser argParser) {

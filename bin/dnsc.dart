@@ -7,6 +7,7 @@ import "lookup/typed.dart";
 import "lookup/mx.dart";
 import "lookup/soa.dart";
 import "lookup/srv.dart";
+import "lookup/m365.dart";
 import "misc/app.dart";
 
 part "parser.dart";
@@ -114,6 +115,9 @@ Future<void> main(List<String> arguments) async {
         break;
       case "dmarc":
         await Typed(dns).query("_dmarc.$domain", RecordType.txt);
+        break;
+      case "m365":
+        await M365(dns).query(domain);
         break;
       default:
         print("Unknown command. Use --help for usage information.");
