@@ -7,34 +7,43 @@ class Typed {
 
   const Typed(this.dns);
 
-  Future<void> query(
-    String? record,
+  Future<List<Record>> query(
+    String record,
     RecordType type, {
     Function(Record)? filter,
+    bool printResults = true,
   }) async {
-    if (record == null || record == "" || record.isEmpty) {
-      print("Record cannot be null!");
-      return;
-    }
+    List<Record> records = [];
+
     try {
-      List<Record> res = await dns.query(record, type) as List<Record>;
+      records = await dns.query(record, type) as List<Record>;
+
       if (filter != null) {
-        res = res.where((e) => filter(e)).toList();
+        records = records.where((e) => filter(e)).toList();
       }
-      if (res.isEmpty) {
-        print("No ${type.name.toUpperCase()} records found for $record");
-      } else {
+
+      if (records.isNotEmpty) {
         if (dns.first) {
-          res = [res.first];
+          records = [records.first];
         } else if (dns.last) {
-          res = [res.last];
+          records = [records.last];
         }
-        if (dns.simple) {
+      }
+    } catch (_) {
+      records = [Record(name: record, rType: type, ttl: -1, data: "")];
+    }
+
+    if (printResults) {
+      if (dns.simple) {
+        if (records.isEmpty ||
+            (records.length == 1 && records.first.data.isEmpty)) {
+          print("No ${type.name.toUpperCase()} records found.");
+        } else {
           print(
-            res
+            records
                 .map(
                   (e) =>
-                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${dns.full
+                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${dns.full
                           ? e.data
                           : e.data.length > 50
                           ? "${e.data.substring(0, 50)}..."
@@ -42,33 +51,33 @@ class Typed {
                 )
                 .join("\n"),
           );
-          return;
         }
+      } else {
         AsciiTable(
           columns: [if (dns.count) "#", "Name", "Type", "TTL", "Data"],
-          rows: res
+          rows: records
               .map(
-                (r) => [
-                  if (dns.count) "${res.indexOf(r) + 1}",
+                (e) => [
+                  if (dns.count) "${records.indexOf(e) + 1}",
                   dns.full
-                      ? r.name
-                      : r.name.length > 35
-                      ? "${r.name.substring(0, 35)}..."
-                      : r.name,
-                  r.rType.name.toUpperCase(),
-                  r.ttl.toString(),
+                      ? e.name
+                      : e.name.length > 35
+                      ? "${e.name.substring(0, 35)}..."
+                      : e.name,
+                  e.rType.name.toUpperCase(),
+                  e.ttl.toString(),
                   dns.full
-                      ? r.data
-                      : r.data.length > 50
-                      ? "${r.data.substring(0, 50)}..."
-                      : r.data,
+                      ? e.data
+                      : e.data.length > 50
+                      ? "${e.data.substring(0, 50)}..."
+                      : e.data,
                 ],
               )
               .toList(),
         ).printTable();
       }
-    } catch (e) {
-      rethrow;
     }
+
+    return records;
   }
 }

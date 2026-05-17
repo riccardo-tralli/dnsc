@@ -7,44 +7,62 @@ class Mx {
 
   const Mx(this.dns);
 
-  Future<void> query(String? record) async {
-    if (record == null || record == "" || record.isEmpty) {
-      print("Record cannot be null!");
-      return;
-    }
+  Future<List<MXRecord>> query(
+    String record, {
+    Function(MXRecord)? filter,
+    bool printResults = true,
+  }) async {
+    List<MXRecord> records = [];
+
     try {
-      List<MXRecord> res =
-          await dns.query(record, RecordType.mx) as List<MXRecord>;
-      if (res.isEmpty) {
-        print("No MX records found for $record");
-      } else {
+      records = await dns.query(record, RecordType.mx) as List<MXRecord>;
+
+      if (filter != null) {
+        records = records.where((e) => filter(e)).toList();
+      }
+
+      if (records.isNotEmpty) {
         if (dns.first) {
-          res = [res.first];
+          records = [records.first];
         } else if (dns.last) {
-          res = [res.last];
+          records = [records.last];
         }
-        if (dns.simple) {
+      }
+    } catch (_) {
+      records = [MXRecord(priority: 0, exchange: "", fqdn: record)];
+    }
+
+    if (printResults) {
+      if (dns.simple) {
+        if (records.isEmpty ||
+            (records.length == 1 && records.first.exchange.isEmpty)) {
+          print("No MX records found.");
+        } else {
           print(
-            res
+            records
                 .map(
                   (e) =>
-                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${e.priority} ${e.exchange}",
+                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.exchange}",
                 )
                 .join("\n"),
           );
-          return;
         }
+      } else {
         AsciiTable(
           columns: [if (dns.count) "#", "Name", "Type", "Priority", "Exchange"],
           rows:
-              res
+              records
                   .map(
-                    (r) => [
-                      if (dns.count) "${res.indexOf(r) + 1}",
-                      r.fqdn,
+                    (e) => [
+                      if (dns.count) "${records.indexOf(e) + 1}",
+                      dns.full
+                          ? e.fqdn
+                          : e.fqdn.length > 35
+                          ? "${e.fqdn.substring(0, 35)}..."
+                          : e.fqdn,
                       "MX",
-                      r.priority.toString(),
-                      r.exchange,
+                      e.priority.toString(),
+                      e.exchange,
                     ],
                   )
                   .toList()
@@ -55,8 +73,8 @@ class Mx {
                 ),
         ).printTable();
       }
-    } catch (e) {
-      rethrow;
     }
+
+    return records;
   }
 }

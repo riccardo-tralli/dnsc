@@ -3,37 +3,51 @@ import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
 
 class Srv {
-  const Srv(this.dns);
-
   final DnsLookup dns;
 
-  Future<void> query(String? record) async {
-    if (record == null || record == "" || record.isEmpty) {
-      print("Record cannot be null!");
-      return;
-    }
+  const Srv(this.dns);
+
+  Future<List<SRVRecord>> query(
+    String record, {
+    Function(SRVRecord)? filter,
+    bool printResults = true,
+  }) async {
+    List<SRVRecord> records = [];
+
     try {
-      List<SRVRecord> res =
-          await dns.query(record, RecordType.srv) as List<SRVRecord>;
-      if (res.isEmpty) {
-        print("No SRV records found for $record");
-      } else {
+      records = await dns.query(record, RecordType.srv) as List<SRVRecord>;
+
+      if (filter != null) {
+        records = records.where((e) => filter(e)).toList();
+      }
+
+      if (records.isNotEmpty) {
         if (dns.first) {
-          res = [res.first];
+          records = [records.first];
         } else if (dns.last) {
-          res = [res.last];
+          records = [records.last];
         }
-        if (dns.simple) {
+      }
+    } catch (_) {
+      records = [SRVRecord(priority: 0, weight: 0, port: 0, fqdn: record)];
+    }
+
+    if (printResults) {
+      if (dns.simple) {
+        if (records.isEmpty ||
+            (records.length == 1 && records.first.port == 0)) {
+          print("No SRV records found.");
+        } else {
           print(
-            res
+            records
                 .map(
                   (e) =>
-                      "${dns.count ? "${res.indexOf(e) + 1}) " : ""}${e.priority} ${e.weight} ${e.port} ${e.target}",
+                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.weight} ${e.port} ${e.target}",
                 )
                 .join("\n"),
           );
-          return;
         }
+      } else {
         AsciiTable(
           columns: [
             if (dns.count) "#",
@@ -45,16 +59,20 @@ class Srv {
             "Target",
           ],
           rows:
-              res
+              records
                   .map(
-                    (r) => [
-                      if (dns.count) "${res.indexOf(r) + 1}",
-                      r.fqdn,
+                    (e) => [
+                      if (dns.count) "${records.indexOf(e) + 1}",
+                      dns.full
+                          ? e.fqdn
+                          : e.fqdn.length > 35
+                          ? "${e.fqdn.substring(0, 35)}..."
+                          : e.fqdn,
                       "SRV",
-                      r.priority.toString(),
-                      r.weight.toString(),
-                      r.port.toString(),
-                      r.target ?? "",
+                      e.priority.toString(),
+                      e.weight.toString(),
+                      e.port.toString(),
+                      e.target ?? "",
                     ],
                   )
                   .toList()
@@ -65,8 +83,8 @@ class Srv {
                 ),
         ).printTable();
       }
-    } catch (e) {
-      rethrow;
     }
+
+    return records;
   }
 }
