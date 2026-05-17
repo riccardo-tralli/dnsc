@@ -7,13 +7,20 @@ class Typed {
 
   const Typed(this.dns);
 
-  Future<void> query(String? record, RecordType type) async {
+  Future<void> query(
+    String? record,
+    RecordType type, {
+    Function(Record)? filter,
+  }) async {
     if (record == null || record == "" || record.isEmpty) {
       print("Record cannot be null!");
       return;
     }
     try {
-      final List<Record> res = await dns.query(record, type) as List<Record>;
+      List<Record> res = await dns.query(record, type) as List<Record>;
+      if (filter != null) {
+        res = res.where((e) => filter(e)).toList();
+      }
       if (res.isEmpty) {
         print("No ${type.name.toUpperCase()} records found for $record");
       } else {

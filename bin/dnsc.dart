@@ -38,8 +38,10 @@ Future<void> main(List<String> arguments) async {
     }
 
     // Configuration
+    // TODO: add output lenght limit
+    // TODO: add record counter
     dns = DnsLookup(
-      nameserver: args.option("server"),
+      nameserver: args.option("nameserver"),
       timeout: int.tryParse(args.option("timeout") ?? "1") ?? 1,
       simple: args.flag("simple"),
     );
@@ -92,11 +94,31 @@ Future<void> main(List<String> arguments) async {
       case "txt":
         await Typed(dns).query(domain, RecordType.txt);
         break;
+      // ! Advanced commands
+      case "spf":
+        await Typed(dns).query(
+          domain,
+          RecordType.txt,
+          filter: (e) => e.data.contains("v=spf1"),
+        );
+        break;
+      case "dkim":
+        if (!args.command!.options.any((e) => e == "selector")) {
+          print("DKIM selector is required. Use --help for usage information.");
+          return;
+        }
+        final String? selector = args.command!.option("selector");
+        await Typed(dns).query("$selector._domainkey.$domain", RecordType.txt);
+        break;
+      case "dmarc":
+        await Typed(dns).query("_dmarc.$domain", RecordType.txt);
+        break;
       default:
         print("Unknown command. Use --help for usage information.");
     }
   } on FormatException catch (_) {
     printUsage(parser);
+    // TODO: add nxdomain exception handling
   } catch (e) {
     log("An error occurred: $e");
   }
