@@ -8,9 +8,9 @@ class AsciiTable {
     return text.padRight(width);
   }
 
-  String _separator(List<int> columnWidths) {
+  String _separator(List<int> columnWidths, {String char = '-'}) {
     final String body = columnWidths
-        .map((width) => "-" * (width + 2))
+        .map((width) => char * (width + 2))
         .join("+");
     return "+$body+";
   }
@@ -34,11 +34,12 @@ class AsciiTable {
     });
 
     final String separator = _separator(columnWidths);
+    final String headerSeparator = _separator(columnWidths, char: '=');
 
     // Print header
-    print(separator);
+    print(headerSeparator);
     print(_row(columns, columnWidths));
-    print(separator);
+    print(headerSeparator);
 
     // Print rows
     for (final row in rows) {
