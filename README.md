@@ -36,7 +36,7 @@ dnsc <flags> [command] [domain]
 | `-f`, `--full`       | Print full values without truncation      |
 | `-n`, `--nameserver` | Use a custom nameserver for lookups       |
 | `--simple`           | Print simple output (no ASCII table)      |
-| `-t`, `--timeout`    | Timeout in seconds (default: `1`)         |
+| `-t`, `--timeout`    | Timeout in seconds (default: `5`)         |
 
 ## Commands
 

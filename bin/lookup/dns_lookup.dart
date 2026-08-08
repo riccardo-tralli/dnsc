@@ -13,7 +13,7 @@ class DnsLookup {
 
   DnsLookup({
     this.nameserver,
-    this.timeout = 1,
+    this.timeout = 5,
     this.simple = false,
     this.full = false,
     this.count = false,
