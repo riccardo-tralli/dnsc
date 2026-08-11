@@ -11,6 +11,17 @@ ArgParser buildParser() {
     )
     ..addFlag("version", negatable: false, help: "Print the tool version.")
     // * Configuration
+    ..addOption(
+      "nameserver",
+      abbr: "n",
+      help: "Use a custom nameserver for lookups.",
+    )
+    ..addOption(
+      "timeout",
+      abbr: "t",
+      help: "Set the timeout for DNS lookups in seconds.",
+    )
+    // * Output
     ..addFlag(
       "count",
       abbr: "c",
@@ -23,11 +34,6 @@ ArgParser buildParser() {
       negatable: false,
       help: "Print full output without cutting.",
     )
-    ..addOption(
-      "nameserver",
-      abbr: "n",
-      help: "Use a custom nameserver for lookups.",
-    )
     ..addFlag(
       "simple",
       negatable: false,
@@ -39,18 +45,15 @@ ArgParser buildParser() {
       negatable: false,
       help: "Print raw output without formatting (--full + --simple).",
     )
-    ..addOption(
-      "timeout",
-      abbr: "t",
-      help: "Set the timeout for DNS lookups in seconds.",
-    )
     ..addFlag(
       "first",
+      abbr: "1",
       negatable: false,
       help: "Only print the first record of the answer.",
     )
     ..addFlag(
       "last",
+      abbr: "9",
       negatable: false,
       help: "Only print the last record of the answer.",
     )
