@@ -124,7 +124,6 @@ Future<void> main(List<String> arguments) async {
     }
   } on FormatException catch (_) {
     printUsage(parser);
-    // TODO: add nxdomain exception handling
   } catch (e) {
     log("An error occurred: $e");
   }

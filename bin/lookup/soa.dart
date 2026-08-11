@@ -1,6 +1,7 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
+import "../misc/nxdomain.dart";
 
 class Soa {
   final DnsLookup dns;
@@ -29,35 +30,22 @@ class Soa {
         }
       }
     } catch (_) {
-      records = [
-        SOARecord(
-          mname: "",
-          rname: "",
-          serial: 0,
-          refresh: 0,
-          retry: 0,
-          expire: 0,
-          minimum: 0,
-          fqdn: record,
-        ),
-      ];
+      if (printResults) {
+        nxDomain(record, RecordType.soa, dns.simple);
+      }
+      return records;
     }
 
     if (printResults) {
       if (dns.simple) {
-        if (records.isEmpty ||
-            (records.length == 1 && records.first.serial == 0)) {
-          print("No SOA records found.");
-        } else {
-          print(
-            records
-                .map(
-                  (e) =>
-                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
-                )
-                .join("\n"),
-          );
-        }
+        print(
+          records
+              .map(
+                (e) =>
+                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
+              )
+              .join("\n"),
+        );
       } else {
         AsciiTable(
           columns: [

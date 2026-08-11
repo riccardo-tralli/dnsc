@@ -1,6 +1,7 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
+import "../misc/nxdomain.dart";
 
 class Mx {
   final DnsLookup dns;
@@ -29,24 +30,22 @@ class Mx {
         }
       }
     } catch (_) {
-      records = [MXRecord(priority: 0, exchange: "", fqdn: record)];
+      if (printResults) {
+        nxDomain(record, RecordType.srv, dns.simple);
+      }
+      return records;
     }
 
     if (printResults) {
       if (dns.simple) {
-        if (records.isEmpty ||
-            (records.length == 1 && records.first.exchange.isEmpty)) {
-          print("No MX records found.");
-        } else {
-          print(
-            records
-                .map(
-                  (e) =>
-                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.exchange}",
-                )
-                .join("\n"),
-          );
-        }
+        print(
+          records
+              .map(
+                (e) =>
+                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.exchange}",
+              )
+              .join("\n"),
+        );
       } else {
         AsciiTable(
           columns: [if (dns.count) "#", "Name", "Type", "Priority", "Exchange"],

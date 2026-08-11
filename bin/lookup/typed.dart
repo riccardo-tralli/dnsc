@@ -1,6 +1,7 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
+import "../misc/nxdomain.dart";
 
 class Typed {
   final DnsLookup dns;
@@ -30,28 +31,26 @@ class Typed {
         }
       }
     } catch (_) {
-      records = [Record(name: record, rType: type, ttl: -1, data: "")];
+      if (printResults) {
+        nxDomain(record, type, dns.simple);
+      }
+      return records;
     }
 
     if (printResults) {
       if (dns.simple) {
-        if (records.isEmpty ||
-            (records.length == 1 && records.first.data.isEmpty)) {
-          print("No ${type.name.toUpperCase()} records found.");
-        } else {
-          print(
-            records
-                .map(
-                  (e) =>
-                      "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${dns.full
-                          ? e.data
-                          : e.data.length > 50
-                          ? "${e.data.substring(0, 50)}..."
-                          : e.data}",
-                )
-                .join("\n"),
-          );
-        }
+        print(
+          records
+              .map(
+                (e) =>
+                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${dns.full
+                        ? e.data
+                        : e.data.length > 50
+                        ? "${e.data.substring(0, 50)}..."
+                        : e.data}",
+              )
+              .join("\n"),
+        );
       } else {
         AsciiTable(
           columns: [if (dns.count) "#", "Name", "Type", "TTL", "Data"],
@@ -64,7 +63,7 @@ class Typed {
                       : e.name.length > 35
                       ? "${e.name.substring(0, 35)}..."
                       : e.name,
-                  e.rType.name.toUpperCase(),
+                  type.name.toUpperCase(),
                   e.ttl.toString(),
                   dns.full
                       ? e.data

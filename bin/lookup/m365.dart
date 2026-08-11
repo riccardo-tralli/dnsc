@@ -64,7 +64,7 @@ class M365 {
         ),
       );
     } catch (_) {
-      records = [];
+      print("No Microsoft 365 records found for $record");
     }
 
     if (dns.simple) {
