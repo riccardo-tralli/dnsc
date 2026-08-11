@@ -7,9 +7,9 @@
  DNS Checker CLI Tool
 ```
 
-`dnsc` is a lightweight DNS checker CLI written in Dart.
-It lets you query common DNS record types (A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, TXT) plus email-related helpers (SPF, DKIM, DMARC).  
-It is based on [DNSolve](https://github.com/vsevex/dnsolve).
+`dnsc` is a lightweight DNS checker CLI written in Dart.  
+It lets you query common DNS record types (A, AAAA, CNAME, MX, NS, PTR, SOA, SRV, TXT) plus email-related helpers (SPF, DKIM, DMARC) and others.  
+It's built on a [fork](https://github.com/riccardo-tralli/dnsolve) of [DNSolve](https://github.com/vsevex/dnsolve).
 
 ## Features
 
@@ -37,6 +37,8 @@ dnsc <flags> [command] [domain]
 | `-n`, `--nameserver` | Use a custom nameserver for lookups       |
 | `--simple`           | Print simple output (no ASCII table)      |
 | `-t`, `--timeout`    | Timeout in seconds (default: `5`)         |
+| `--first`            | Only print the first record               |
+| `--last`             | Only print the last record                |
 
 ## Commands
 
@@ -57,6 +59,7 @@ dnsc <flags> [command] [domain]
 - `spf`: queries TXT records and filters entries containing `v=spf1`
 - `dkim`: queries `TXT` on `<selector>._domainkey.<domain>` provided with `-s` or `--selector`
 - `dmarc`: queries `TXT` on `_dmarc.<domain>`
+- `m365`: queries various records for Microsoft 365 implementation
 
 ## Output Modes
 
@@ -64,6 +67,8 @@ dnsc <flags> [command] [domain]
 - `--simple`: plain lines, easier for scripting
 - `-c`, `--count`: adds a record index column/prefix
 - `-f`, `--full`: disables truncation of long values
+- `--first`: only print the first record of the answer
+- `--last`: only print the last record of the answer
 
 ## Examples
 
@@ -91,4 +96,7 @@ dnsc dkim example.com -s key1
 
 # DMARC check
 dnsc dmarc example.com
+
+# First MX record only
+dnsc mx example.com --first
 ```
