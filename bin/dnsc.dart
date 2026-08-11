@@ -74,8 +74,8 @@ Future<void> main(List<String> arguments) async {
       dns = DnsLookup(
         nameserver: args.option("nameserver"),
         timeout: int.tryParse(args.option("timeout") ?? "5") ?? 5,
-        simple: args.flag("simple"),
-        full: args.flag("full"),
+        simple: args.flag("simple") || args.flag("raw"),
+        full: args.flag("full") || args.flag("raw"),
         count: args.flag("count"),
         first: args.flag("first"),
         last: args.flag("last"),

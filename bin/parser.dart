@@ -33,6 +33,12 @@ ArgParser buildParser() {
       negatable: false,
       help: "Print simple output without tables.",
     )
+    ..addFlag(
+      "raw",
+      abbr: "r",
+      negatable: false,
+      help: "Print raw output without formatting (--full + --simple).",
+    )
     ..addOption(
       "timeout",
       abbr: "t",
