@@ -17,6 +17,8 @@ class Mx {
 
     try {
       records = await dns.query(record, RecordType.mx) as List<MXRecord>;
+      // Sort records by priority
+      records.sort((a, b) => a.priority.compareTo(b.priority));
 
       if (filter != null) {
         records = records.where((e) => filter(e)).toList();
