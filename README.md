@@ -32,13 +32,14 @@ dnsc <flags> [command] [domain]
 | -------------------- | ----------------------------------------- |
 | `-h`, `--help`       | Print usage information                   |
 | `--version`          | Print the current version                 |
+| `-n`, `--nameserver` | Use a custom nameserver for lookups       |
+| `-t`, `--timeout`    | Timeout in seconds (default: `5`)         |
 | `-c`, `--count`      | Prepend record number to each output line |
 | `-f`, `--full`       | Print full values without truncation      |
-| `-n`, `--nameserver` | Use a custom nameserver for lookups       |
 | `--simple`           | Print simple output (no ASCII table)      |
-| `-t`, `--timeout`    | Timeout in seconds (default: `5`)         |
-| `--first`            | Only print the first record               |
-| `--last`             | Only print the last record                |
+| `-r`, `--raw`        | Print raw output without formatting       |
+| `-1`, `--first`      | Only print the first record               |
+| `-9`, `--last`       | Only print the last record                |
 
 ## Commands
 
@@ -67,8 +68,9 @@ dnsc <flags> [command] [domain]
 - `--simple`: plain lines, easier for scripting
 - `-c`, `--count`: adds a record index column/prefix
 - `-f`, `--full`: disables truncation of long values
-- `--first`: only print the first record of the answer
-- `--last`: only print the last record of the answer
+- `-r`, `--raw`: print raw output without formatting (equivalent to `--simple` and `--full`)
+- `-1`, `--first`: only print the first record of the answer
+- `-9`, `--last`: only print the last record of the answer
 
 ## Examples
 
@@ -87,6 +89,7 @@ dnsc -t 5 -n 1.1.1.1 cname example.com
 
 # TXT with simple and full output
 dnsc --simple --full txt example.com
+dnsc -r txt example.com
 
 # SPF check
 dnsc spf example.com
@@ -94,9 +97,9 @@ dnsc spf example.com
 # DKIM check
 dnsc dkim example.com -s key1
 
-# DMARC check
-dnsc dmarc example.com
-
 # First MX record only
 dnsc mx example.com --first
+
+# DKIM check with raw output and last record only
+dnsc -r9 dkim example.com -s keyX
 ```
