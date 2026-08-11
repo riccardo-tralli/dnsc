@@ -31,7 +31,7 @@ class Mx {
       }
     } catch (_) {
       if (printResults) {
-        nxDomain(record, RecordType.srv, dns.simple);
+        nxDomain(record, RecordType.mx, dns.simple);
       }
       return records;
     }
