@@ -70,6 +70,8 @@ class DnsLookup {
       }
     } catch (_) {
       rethrow;
+    } finally {
+      _dns.dispose();
     }
   }
 }
