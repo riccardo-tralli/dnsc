@@ -1,3 +1,5 @@
+import "dart:io";
+
 import 'package:dnsolve/dnsolve.dart';
 
 class DnsLookup {
@@ -36,7 +38,7 @@ class DnsLookup {
           timeout: Duration(seconds: timeout),
         );
         if (res.isEmpty) {
-          return [];
+          return <Record>[];
         }
         return res;
       }
@@ -49,28 +51,34 @@ class DnsLookup {
       switch (type) {
         case RecordType.mx:
           if (res.answer?.mxs?.isEmpty ?? true) {
-            return [];
+            return <MXRecord>[];
           }
           return res.answer!.mxs!;
         case RecordType.soa:
           if (res.answer?.soas?.isEmpty ?? true) {
-            return [];
+            return <SOARecord>[];
           }
           return res.answer!.soas!;
         case RecordType.srv:
           if (res.answer?.srvs?.isEmpty ?? true) {
-            return [];
+            return <SRVRecord>[];
           }
           return res.answer!.srvs!;
         default:
           if (res.answer?.records?.isEmpty ?? true) {
-            return [];
+            return <Record>[];
           }
           return res.answer!.records!;
       }
     } catch (_) {
       rethrow;
     }
+  }
+
+  void printError(String record, RecordType type, Object error) {
+    stderr.writeln(
+      "${type.name.toUpperCase()} lookup for $record failed: $error",
+    );
   }
 
   /// Releases the resolver; call once all queries for a command are done,

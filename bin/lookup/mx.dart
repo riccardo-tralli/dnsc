@@ -1,7 +1,6 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
-import "../misc/nxdomain.dart";
 
 class Mx {
   final DnsLookup dns;
@@ -31,15 +30,15 @@ class Mx {
           records = [records.last];
         }
       }
-    } catch (_) {
-      if (printResults) {
-        nxDomain(record, RecordType.mx, dns.simple);
-      }
-      return records;
+    } catch (e) {
+      dns.printError(record, RecordType.mx, e);
+      return [];
     }
 
     if (printResults) {
-      if (dns.simple) {
+      if (records.isEmpty) {
+        print("No MX records found.");
+      } else if (dns.simple) {
         print(
           records
               .map(

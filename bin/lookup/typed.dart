@@ -1,7 +1,6 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
-import "../misc/nxdomain.dart";
 
 class Typed {
   final DnsLookup dns;
@@ -30,15 +29,15 @@ class Typed {
           records = [records.last];
         }
       }
-    } catch (_) {
-      if (printResults) {
-        nxDomain(record, type, dns.simple);
-      }
-      return records;
+    } catch (e) {
+      dns.printError(record, type, e);
+      return [];
     }
 
     if (printResults) {
-      if (dns.simple) {
+      if (records.isEmpty) {
+        print("No ${type.name.toUpperCase()} records found.");
+      } else if (dns.simple) {
         print(
           records
               .map(

@@ -1,7 +1,6 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
 import "../misc/ascii_table.dart";
-import "../misc/nxdomain.dart";
 
 class Srv {
   final DnsLookup dns;
@@ -29,15 +28,15 @@ class Srv {
           records = [records.last];
         }
       }
-    } catch (_) {
-      if (printResults) {
-        nxDomain(record, RecordType.srv, dns.simple);
-      }
-      return records;
+    } catch (e) {
+      dns.printError(record, RecordType.srv, e);
+      return [];
     }
 
     if (printResults) {
-      if (dns.simple) {
+      if (records.isEmpty) {
+        print("No SRV records found.");
+      } else if (dns.simple) {
         print(
           records
               .map(
