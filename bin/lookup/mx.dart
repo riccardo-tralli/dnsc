@@ -16,8 +16,9 @@ class Mx {
 
     try {
       records = await dns.query(record, RecordType.mx) as List<MXRecord>;
-      // Sort records by priority
-      records.sort((a, b) => a.priority.compareTo(b.priority));
+      // Sort by priority before first/last so numbering and every output mode
+      // agree; sort a copy to leave the resolver's (cached) answer untouched
+      records = [...records]..sort((a, b) => a.priority.compareTo(b.priority));
 
       if (filter != null) {
         records = records.where((e) => filter(e)).toList();
@@ -50,27 +51,21 @@ class Mx {
       } else {
         AsciiTable(
           columns: [if (dns.count) "#", "Name", "Type", "Priority", "Exchange"],
-          rows:
-              records
-                  .map(
-                    (e) => [
-                      if (dns.count) "${records.indexOf(e) + 1}",
-                      dns.full
-                          ? e.fqdn
-                          : e.fqdn.length > 35
-                          ? "${e.fqdn.substring(0, 35)}..."
-                          : e.fqdn,
-                      "MX",
-                      e.priority.toString(),
-                      e.exchange,
-                    ],
-                  )
-                  .toList()
-                ..sort(
-                  (a, b) => int.parse(
-                    a[dns.count ? 3 : 2],
-                  ).compareTo(int.parse(b[dns.count ? 3 : 2])),
-                ),
+          rows: records
+              .map(
+                (e) => [
+                  if (dns.count) "${records.indexOf(e) + 1}",
+                  dns.full
+                      ? e.fqdn
+                      : e.fqdn.length > 35
+                      ? "${e.fqdn.substring(0, 35)}..."
+                      : e.fqdn,
+                  "MX",
+                  e.priority.toString(),
+                  e.exchange,
+                ],
+              )
+              .toList(),
         ).printTable();
       }
     }
