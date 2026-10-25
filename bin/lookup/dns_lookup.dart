@@ -70,8 +70,10 @@ class DnsLookup {
       }
     } catch (_) {
       rethrow;
-    } finally {
-      _dns.dispose();
     }
   }
+
+  /// Releases the resolver; call once all queries for a command are done,
+  /// since a single command (e.g. m365) can run several queries.
+  void dispose() => _dns.dispose();
 }

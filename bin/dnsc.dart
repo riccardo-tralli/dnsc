@@ -164,6 +164,7 @@ Future<void> main(List<String> arguments) async {
         default:
           print("Unknown command. Use --help for usage information.");
       }
+      dns.dispose();
     } while (loop);
   } on FormatException catch (_) {
     printUsage(parser);
