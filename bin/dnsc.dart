@@ -88,13 +88,10 @@ Future<void> main(List<String> arguments) async {
       );
 
       // Domain validation
-      String? domain = args.arguments
+      // Only positional arguments after the command, so option values are ignored
+      String? domain = args.command!.rest
           .where(
             (e) =>
-                // Ignore flags, commands, and options
-                !parser.commands.containsKey(e) &&
-                !parser.options.containsKey(e) &&
-                !e.startsWith("-") &&
                 // FQDN validation
                 RegExp(
                   r"^(?:[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\.)+[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?$",
