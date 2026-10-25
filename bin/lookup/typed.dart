@@ -1,6 +1,5 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
-import "../misc/ascii_table.dart";
 
 class Typed {
   final DnsLookup dns;
@@ -10,70 +9,31 @@ class Typed {
   Future<List<Record>> query(
     String record,
     RecordType type, {
-    Function(Record)? filter,
+    bool Function(Record)? filter,
     bool printResults = true,
   }) async {
-    List<Record> records = [];
-
-    try {
-      records = await dns.query(record, type) as List<Record>;
-
-      if (filter != null) {
-        records = records.where((e) => filter(e)).toList();
-      }
-
-      if (records.isNotEmpty) {
-        if (dns.first) {
-          records = [records.first];
-        } else if (dns.last) {
-          records = [records.last];
-        }
-      }
-    } catch (e) {
-      dns.printError(record, type, e);
+    final List<Record>? records = await dns.fetch<Record>(
+      record,
+      type,
+      filter: filter,
+    );
+    if (records == null) {
       return [];
     }
 
     if (printResults) {
-      if (records.isEmpty) {
-        print("No ${type.name.toUpperCase()} records found.");
-      } else if (dns.simple) {
-        print(
-          records
-              .map(
-                (e) =>
-                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${dns.full
-                        ? e.data
-                        : e.data.length > 50
-                        ? "${e.data.substring(0, 50)}..."
-                        : e.data}",
-              )
-              .join("\n"),
-        );
-      } else {
-        AsciiTable(
-          columns: [if (dns.count) "#", "Name", "Type", "TTL", "Data"],
-          rows: records
-              .map(
-                (e) => [
-                  if (dns.count) "${records.indexOf(e) + 1}",
-                  dns.full
-                      ? e.name
-                      : e.name.length > 35
-                      ? "${e.name.substring(0, 35)}..."
-                      : e.name,
-                  type.name.toUpperCase(),
-                  e.ttl.toString(),
-                  dns.full
-                      ? e.data
-                      : e.data.length > 50
-                      ? "${e.data.substring(0, 50)}..."
-                      : e.data,
-                ],
-              )
-              .toList(),
-        ).printTable();
-      }
+      dns.printRecords<Record>(
+        records,
+        type: type.name.toUpperCase(),
+        columns: ["Name", "Type", "TTL", "Data"],
+        row: (e) => [
+          dns.fitName(e.name),
+          type.name.toUpperCase(),
+          e.ttl.toString(),
+          dns.fitData(e.data),
+        ],
+        line: (e) => dns.fitData(e.data),
+      );
     }
 
     return records;

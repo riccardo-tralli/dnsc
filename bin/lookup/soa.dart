@@ -1,6 +1,5 @@
 import 'package:dnsolve/dnsolve.dart';
 import "dns_lookup.dart";
-import "../misc/ascii_table.dart";
 
 class Soa {
   final DnsLookup dns;
@@ -9,78 +8,47 @@ class Soa {
 
   Future<List<SOARecord>> query(
     String record, {
-    Function(SOARecord)? filter,
+    bool Function(SOARecord)? filter,
     bool printResults = true,
   }) async {
-    List<SOARecord> records = [];
-
-    try {
-      records = await dns.query(record, RecordType.soa) as List<SOARecord>;
-
-      if (filter != null) {
-        records = records.where((e) => filter(e)).toList();
-      }
-
-      if (records.isNotEmpty) {
-        if (dns.first) {
-          records = [records.first];
-        } else if (dns.last) {
-          records = [records.last];
-        }
-      }
-    } catch (e) {
-      dns.printError(record, RecordType.soa, e);
+    final List<SOARecord>? records = await dns.fetch<SOARecord>(
+      record,
+      RecordType.soa,
+      filter: filter,
+    );
+    if (records == null) {
       return [];
     }
 
     if (printResults) {
-      if (records.isEmpty) {
-        print("No SOA records found.");
-      } else if (dns.simple) {
-        print(
-          records
-              .map(
-                (e) =>
-                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
-              )
-              .join("\n"),
-        );
-      } else {
-        AsciiTable(
-          columns: [
-            if (dns.count) "#",
-            "Name",
-            "Type",
-            "Primary",
-            "Responsible",
-            "Serial",
-            "Refresh",
-            "Retry",
-            "Expire",
-            "Minimum",
-          ],
-          rows: records
-              .map(
-                (e) => [
-                  if (dns.count) "${records.indexOf(e) + 1}",
-                  dns.full
-                      ? e.fqdn
-                      : e.fqdn.length > 35
-                      ? "${e.fqdn.substring(0, 35)}..."
-                      : e.fqdn,
-                  "SOA",
-                  e.mname,
-                  e.rname,
-                  e.serial.toString(),
-                  e.refresh.toString(),
-                  e.retry.toString(),
-                  e.expire.toString(),
-                  e.minimum.toString(),
-                ],
-              )
-              .toList(),
-        ).printTable();
-      }
+      dns.printRecords<SOARecord>(
+        records,
+        type: "SOA",
+        columns: [
+          "Name",
+          "Type",
+          "Primary",
+          "Responsible",
+          "Serial",
+          "Refresh",
+          "Retry",
+          "Expire",
+          "Minimum",
+        ],
+        row: (e) => [
+          dns.fitName(e.fqdn),
+          "SOA",
+          e.mname,
+          e.rname,
+          e.serial.toString(),
+          e.refresh.toString(),
+          e.retry.toString(),
+          e.expire.toString(),
+          e.minimum.toString(),
+        ],
+        line: (e) =>
+            "${e.mname} ${e.rname} ${e.serial} ${e.refresh} ${e.retry} ${e.expire} ${e.minimum}",
+      );
     }
 
     return records;

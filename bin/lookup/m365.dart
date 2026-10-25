@@ -3,7 +3,6 @@ import "package:dnsolve/dnsolve.dart";
 import "dns_lookup.dart";
 import "mx.dart";
 import "typed.dart";
-import "../misc/ascii_table.dart";
 
 class M365 {
   final DnsLookup dns;
@@ -12,7 +11,7 @@ class M365 {
 
   Future<void> query(String record) async {
     // Each lookup reports its own errors and returns an empty list on failure
-    final List<dynamic> records = [];
+    final List<Object> records = [];
 
     // Exchange
     records.addAll(await Mx(dns).query(record, printResults: false));
@@ -64,59 +63,30 @@ class M365 {
       ),
     );
 
-    if (records.isEmpty) {
-      print("No Microsoft 365 records found for $record");
-    } else if (dns.simple) {
-      print(
-        records
-            .map((e) {
-              final String count = dns.count
-                  ? "${(records.indexOf(e) + 1).toString()}) "
-                  : "";
-              return switch (e) {
-                MXRecord _ =>
-                  "$count[MX] ${dns.full ? e.fqdn : (e.fqdn.length > 35 ? "${e.fqdn.substring(0, 35)}..." : e.fqdn)} ==> ${e.priority} ${e.exchange}",
-                Record _ =>
-                  "$count[${e.rType.name.toUpperCase()}] ${dns.full ? e.name : (e.name.length > 35 ? "${e.name.substring(0, 35)}..." : e.name)} ==> ${dns.full ? e.data : (e.data.length > 50 ? "${e.data.substring(0, 50)}..." : e.data)}",
-                _ => "",
-              };
-            })
-            .join("\n"),
-      );
-    } else {
-      AsciiTable(
-        columns: [if (dns.count) "#", "Name", "Type", "Data"],
-        rows: records
-            .map(
-              (e) => switch (e) {
-                MXRecord _ => [
-                  if (dns.count) (records.indexOf(e) + 1).toString(),
-                  dns.full
-                      ? e.fqdn
-                      : e.fqdn.length > 35
-                      ? "${e.fqdn.substring(0, 35)}..."
-                      : e.fqdn,
-                  "MX",
-                  "${e.priority} ${e.exchange}",
-                ],
-                _ => [
-                  if (dns.count) (records.indexOf(e) + 1).toString(),
-                  dns.full
-                      ? (e as Record).name
-                      : ((e as Record).name.length > 35
-                            ? "${e.name.substring(0, 35)}..."
-                            : e.name),
-                  e.rType.name.toUpperCase(),
-                  dns.full
-                      ? e.data
-                      : (e.data.length > 50
-                            ? "${e.data.substring(0, 50)}..."
-                            : e.data),
-                ],
-              },
-            )
-            .toList(),
-      ).printTable();
-    }
+    dns.printRecords<Object>(
+      records,
+      type: "M365",
+      emptyMessage: "No Microsoft 365 records found for $record",
+      columns: ["Name", "Type", "Data"],
+      row: (e) {
+        final (name, type, data) = _fields(e);
+        return [name, type, data];
+      },
+      line: (e) {
+        final (name, type, data) = _fields(e);
+        return "[$type] $name ==> $data";
+      },
+    );
   }
+
+  /// Name, type and data of a record, shortened unless --full is set
+  (String, String, String) _fields(Object e) => switch (e) {
+    MXRecord e => (dns.fitName(e.fqdn), "MX", "${e.priority} ${e.exchange}"),
+    Record e => (
+      dns.fitName(e.name),
+      e.rType.name.toUpperCase(),
+      dns.fitData(e.data),
+    ),
+    _ => ("", "", ""),
+  };
 }
