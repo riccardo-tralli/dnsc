@@ -41,7 +41,13 @@ Future<void> main(List<String> arguments) async {
         }
         // Re-parse the new input
         final List<String> newArgs = input.split(" ");
-        args = parser.parse(newArgs);
+        // Invalid input must not end the interactive session
+        try {
+          args = parser.parse(newArgs);
+        } on FormatException catch (_) {
+          printUsage(parser);
+          continue;
+        }
       }
 
       // Help
