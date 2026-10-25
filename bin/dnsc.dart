@@ -78,10 +78,33 @@ Future<void> main(List<String> arguments) async {
         return;
       }
 
+      // Options validation
+      final int? timeout = int.tryParse(args.option("timeout") ?? "5");
+      if (timeout == null || timeout <= 0) {
+        print(
+          "Timeout must be a positive integer. Use --help for usage information.",
+        );
+        exitCode = usageErrorExitCode;
+        if (loop) {
+          continue;
+        }
+        return;
+      }
+      if (args.flag("first") && args.flag("last")) {
+        print(
+          "--first and --last cannot be used together. Use --help for usage information.",
+        );
+        exitCode = usageErrorExitCode;
+        if (loop) {
+          continue;
+        }
+        return;
+      }
+
       // Configuration
       dns = DnsLookup(
         nameserver: args.option("nameserver"),
-        timeout: int.tryParse(args.option("timeout") ?? "5") ?? 5,
+        timeout: timeout,
         simple: args.flag("simple") || args.flag("raw"),
         full: args.flag("full") || args.flag("raw"),
         count: args.flag("count"),
@@ -94,9 +117,11 @@ Future<void> main(List<String> arguments) async {
       String? domain = args.command!.rest
           .where(
             (e) =>
-                // FQDN validation
+                // IPv4/IPv6 address (for PTR lookups)
+                InternetAddress.tryParse(e) != null ||
+                // FQDN validation, optionally with the root trailing dot
                 RegExp(
-                  r"^(?:[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\.)+[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?$",
+                  r"^(?:[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\.)+[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\.?$",
                 ).hasMatch(e),
           )
           .lastOrNull;
