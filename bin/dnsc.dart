@@ -44,7 +44,8 @@ Future<void> main(List<String> arguments) async {
         // Invalid input must not end the interactive session
         try {
           args = parser.parse(newArgs);
-        } on FormatException catch (_) {
+        } on FormatException catch (e) {
+          stderr.writeln(e.message);
           printUsage(parser);
           continue;
         }
@@ -177,7 +178,8 @@ Future<void> main(List<String> arguments) async {
     if (loop) {
       exitCode = 0;
     }
-  } on FormatException catch (_) {
+  } on FormatException catch (e) {
+    stderr.writeln(e.message);
     printUsage(parser);
     exitCode = usageErrorExitCode;
   } catch (e) {
