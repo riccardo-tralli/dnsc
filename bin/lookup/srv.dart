@@ -44,7 +44,7 @@ class Srv {
           records
               .map(
                 (e) =>
-                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.weight} ${e.port} ${e.target}",
+                    "${dns.count ? "${records.indexOf(e) + 1}) " : ""}${e.priority} ${e.weight} ${e.port} ${e.target ?? ""}",
               )
               .join("\n"),
         );
