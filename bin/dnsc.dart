@@ -32,15 +32,19 @@ Future<void> main(List<String> arguments) async {
     do {
       if (loop) {
         stdout.write("> ");
-        String? input = stdin.readLineSync();
-        if (input == null || input.trim().toLowerCase() == "exit") {
+        String? input = stdin.readLineSync()?.trim();
+        if (input == null || input.toLowerCase() == "exit") {
           break;
         }
-        if (input == "help") {
+        // Empty line: just show the prompt again
+        if (input.isEmpty) {
+          continue;
+        }
+        if (input.toLowerCase() == "help") {
           input = "--help";
         }
-        // Re-parse the new input
-        final List<String> newArgs = input.split(" ");
+        // Re-parse the new input, ignoring repeated whitespace
+        final List<String> newArgs = input.split(RegExp(r"\s+"));
         // Invalid input must not end the interactive session
         try {
           args = parser.parse(newArgs);
