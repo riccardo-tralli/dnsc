@@ -11,63 +11,62 @@ class M365 {
   const M365(this.dns);
 
   Future<void> query(String record) async {
-    List<dynamic> records = [];
+    // Each lookup reports its own errors and returns an empty list on failure
+    final List<dynamic> records = [];
 
-    try {
-      // Exchange
-      records.addAll(await Mx(dns).query(record, printResults: false));
-      records.addAll(
-        await Typed(dns).query(
-          record,
-          RecordType.txt,
-          filter: (e) => e.data.contains("v=spf1"),
-          printResults: false,
-        ),
-      );
-      records.addAll(
-        await Typed(dns).query(
-          "selector1._domainkey.$record",
-          RecordType.txt,
-          printResults: false,
-        ),
-      );
-      records.addAll(
-        await Typed(dns).query(
-          "selector2._domainkey.$record",
-          RecordType.txt,
-          printResults: false,
-        ),
-      );
-      records.addAll(
-        await Typed(
-          dns,
-        ).query("_dmarc.$record", RecordType.txt, printResults: false),
-      );
-      records.addAll(
-        await Typed(
-          dns,
-        ).query("autodiscover.$record", RecordType.cname, printResults: false),
-      );
-      // Intune
-      records.addAll(
-        await Typed(dns).query(
-          "enterpriseregistration.$record",
-          RecordType.cname,
-          printResults: false,
-        ),
-      );
-      records.addAll(
-        await Typed(dns).query(
-          "enterpriseenrollment.$record",
-          RecordType.cname,
-          printResults: false,
-        ),
-      );
-    } catch (_) {
+    // Exchange
+    records.addAll(await Mx(dns).query(record, printResults: false));
+    records.addAll(
+      await Typed(dns).query(
+        record,
+        RecordType.txt,
+        filter: (e) => e.data.contains("v=spf1"),
+        printResults: false,
+      ),
+    );
+    records.addAll(
+      await Typed(dns).query(
+        "selector1._domainkey.$record",
+        RecordType.txt,
+        printResults: false,
+      ),
+    );
+    records.addAll(
+      await Typed(dns).query(
+        "selector2._domainkey.$record",
+        RecordType.txt,
+        printResults: false,
+      ),
+    );
+    records.addAll(
+      await Typed(
+        dns,
+      ).query("_dmarc.$record", RecordType.txt, printResults: false),
+    );
+    records.addAll(
+      await Typed(
+        dns,
+      ).query("autodiscover.$record", RecordType.cname, printResults: false),
+    );
+    // Intune
+    records.addAll(
+      await Typed(dns).query(
+        "enterpriseregistration.$record",
+        RecordType.cname,
+        printResults: false,
+      ),
+    );
+    records.addAll(
+      await Typed(dns).query(
+        "enterpriseenrollment.$record",
+        RecordType.cname,
+        printResults: false,
+      ),
+    );
+
+    if (records.isEmpty) {
       print("No Microsoft 365 records found for $record");
-    }
-
-    if (dns.simple) {
+    } else if (dns.simple) {
       print(
         records
             .map((e) {
