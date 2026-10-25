@@ -28,7 +28,7 @@ class Typed {
         columns: ["Name", "Type", "TTL", "Data"],
         row: (e) => [
           dns.fitName(e.name),
-          type.name.toUpperCase(),
+          e.rType.name.toUpperCase(),
           e.ttl.toString(),
           dns.fitData(e.data),
         ],
