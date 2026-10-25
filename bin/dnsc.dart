@@ -9,6 +9,7 @@ import "lookup/soa.dart";
 import "lookup/srv.dart";
 import "lookup/m365.dart";
 import "misc/app.dart";
+import "misc/const.dart";
 
 part "parser.dart";
 
@@ -69,6 +70,7 @@ Future<void> main(List<String> arguments) async {
 
       if (args.command == null) {
         print("No command provided. Use --help for usage information.");
+        exitCode = usageErrorExitCode;
         if (loop) {
           continue;
         }
@@ -99,6 +101,7 @@ Future<void> main(List<String> arguments) async {
           .lastOrNull;
       if (domain == null) {
         print("No valid domain provided. Use --help for usage information.");
+        exitCode = usageErrorExitCode;
         if (loop) {
           continue;
         }
@@ -147,6 +150,7 @@ Future<void> main(List<String> arguments) async {
             print(
               "DKIM selector is required. Use --help for usage information.",
             );
+            exitCode = usageErrorExitCode;
             if (loop) {
               continue;
             }
@@ -165,12 +169,19 @@ Future<void> main(List<String> arguments) async {
           break;
         default:
           print("Unknown command. Use --help for usage information.");
+          exitCode = usageErrorExitCode;
       }
       dns.dispose();
     } while (loop);
+    // Exit codes are meant for single commands (e.g. scripts), not sessions
+    if (loop) {
+      exitCode = 0;
+    }
   } on FormatException catch (_) {
     printUsage(parser);
+    exitCode = usageErrorExitCode;
   } catch (e) {
     stderr.writeln("An error occurred: $e");
+    exitCode = lookupErrorExitCode;
   }
 }

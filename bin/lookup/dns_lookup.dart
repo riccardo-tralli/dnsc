@@ -1,6 +1,7 @@
 import "dart:io";
 
 import 'package:dnsolve/dnsolve.dart';
+import "../misc/const.dart";
 
 class DnsLookup {
   final String? nameserver;
@@ -79,6 +80,7 @@ class DnsLookup {
     stderr.writeln(
       "${type.name.toUpperCase()} lookup for $record failed: $error",
     );
+    exitCode = lookupErrorExitCode;
   }
 
   /// Releases the resolver; call once all queries for a command are done,
