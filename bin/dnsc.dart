@@ -1,4 +1,3 @@
-import "dart:developer";
 import "dart:io";
 
 import "package:args/args.dart";
@@ -172,6 +171,6 @@ Future<void> main(List<String> arguments) async {
   } on FormatException catch (_) {
     printUsage(parser);
   } catch (e) {
-    log("An error occurred: $e");
+    stderr.writeln("An error occurred: $e");
   }
 }
