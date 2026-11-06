@@ -63,6 +63,12 @@ ArgParser buildParser() {
       negatable: false,
       help: "Break down SPF, DKIM and DMARC records and check them.",
     )
+    ..addFlag(
+      "recursive",
+      abbr: "R",
+      negatable: false,
+      help: "Follow SPF includes and redirects (implies --analyze).",
+    )
     // * Lookup
     ..addCommand("a")
     ..addCommand("aaaa")
@@ -107,4 +113,5 @@ void printUsage(ArgParser argParser) {
   print("   dnsc --simple cname example.com");
   print("   dnsc -t 5 -n 1.1.1.1 cname example.com");
   print("   dnsc --analyze spf example.com");
+  print("   dnsc --recursive spf example.com");
 }

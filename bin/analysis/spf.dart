@@ -20,7 +20,10 @@ class SpfAnalyzer extends RecordAnalyzer {
     "?": "neutral",
   };
 
-  const SpfAnalyzer();
+  /// DNS lookups of the included and redirected records, when resolved
+  final int? nestedLookups;
+
+  const SpfAnalyzer({this.nestedLookups});
 
   @override
   String get type => "SPF";
@@ -34,8 +37,9 @@ class SpfAnalyzer extends RecordAnalyzer {
   ];
 
   @override
-  Analysis analyze(String data) {
+  SpfAnalysis analyze(String data) {
     final List<List<String>> rows = [];
+    final List<(String, String)> targets = [];
     final List<String> warnings = [];
     final List<String> terms = data.trim().split(RegExp(r"\s+"));
 
@@ -78,6 +82,7 @@ class SpfAnalyzer extends RecordAnalyzer {
         rows.add(["", name, value, _modifierDescription(name, value)]);
         if (name == "redirect") {
           redirect = true;
+          targets.add((name, value));
         }
         continue;
       }
@@ -111,6 +116,9 @@ class SpfAnalyzer extends RecordAnalyzer {
       if (name == "all") {
         all ??= qualifier;
       }
+      if (name == "include") {
+        targets.add((name, value));
+      }
       rows.add([
         "$qualifier ${_results[qualifier]}",
         name,
@@ -136,17 +144,23 @@ class SpfAnalyzer extends RecordAnalyzer {
     }
     if (all != null && redirect) {
       warnings.add("'redirect' is ignored because the record has 'all'.");
+      targets.removeWhere((e) => e.$1 == "redirect");
     }
-    if (lookups > _maxLookups) {
+    final int total = lookups + (nestedLookups ?? 0);
+    if (total > _maxLookups) {
       warnings.add(
-        "Too many DNS lookups ($lookups, max $_maxLookups): receivers return permerror.",
+        "Too many DNS lookups ($total, max $_maxLookups): receivers return permerror.",
       );
     }
 
-    return Analysis(
+    return SpfAnalysis(
       rows,
+      lookups: lookups,
+      targets: targets,
       notes: [
-        "DNS lookups: $lookups/$_maxLookups (nested includes and redirects not counted).",
+        nestedLookups == null
+            ? "DNS lookups: $lookups/$_maxLookups (nested includes and redirects not counted, use --recursive)."
+            : "DNS lookups: $total/$_maxLookups ($lookups in this record, $nestedLookups in nested records).",
       ],
       warnings: warnings,
     );
@@ -198,4 +212,20 @@ class SpfAnalyzer extends RecordAnalyzer {
     "exp" => "Rejection message from the TXT record of $value",
     _ => "Unknown modifier, ignored",
   };
+}
+
+class SpfAnalysis extends Analysis {
+  /// DNS lookups of this record only
+  final int lookups;
+
+  /// Records to evaluate next, as (term, domain): includes and the redirect
+  final List<(String, String)> targets;
+
+  const SpfAnalysis(
+    super.rows, {
+    required this.lookups,
+    required this.targets,
+    super.notes,
+    super.warnings,
+  });
 }

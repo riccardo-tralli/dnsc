@@ -42,6 +42,7 @@ dnsc <flags> [command] [domain]
 | `-1`, `--first`      | Only print the first record               |
 | `-9`, `--last`       | Only print the last record                |
 | `-a`, `--analyze`    | Break down SPF, DKIM and DMARC records    |
+| `-R`, `--recursive`  | Follow SPF includes and redirects         |
 
 ## Commands
 
@@ -73,6 +74,8 @@ With `-a`, `--analyze` the `spf`, `dkim` and `dmarc` commands break each record 
 - `dkim`: key type and size, revoked keys, weak RSA keys (below 2048 bits), testing mode, `sha1`-only hashes
 
 Multiple records of the same kind are also reported, as receivers treat them as an error.
+
+The SPF lookup count only covers the queried record. With `-R`, `--recursive` (`spf` only, implies `--analyze`) every `include` and `redirect` is resolved recursively: a second table shows the include tree with the lookups of each record, and the count covers the whole evaluation. Included domains without an SPF record, with multiple SPF records, and include loops are reported, as receivers return a permerror.
 
 ## Output Modes
 
@@ -113,6 +116,9 @@ dnsc dkim example.com -s key1
 dnsc --analyze spf example.com
 dnsc -a dmarc example.com
 dnsc -a dkim example.com -s key1
+
+# SPF analysis with recursive include resolution
+dnsc -R spf example.com
 
 # First MX record only
 dnsc mx example.com --first

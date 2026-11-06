@@ -1,6 +1,8 @@
 import 'package:dnsolve/dnsolve.dart';
 import "../analysis/analysis.dart";
+import "../analysis/spf.dart";
 import "dns_lookup.dart";
+import "spf_tree.dart";
 
 /// TXT lookup that breaks each record down into its terms with [analyzer]
 class Analyzed {
@@ -12,6 +14,7 @@ class Analyzed {
     String record,
     RecordAnalyzer analyzer, {
     bool Function(Record)? filter,
+    bool recursive = false,
   }) async {
     final List<Record>? records = await dns.fetch<Record>(
       record,
@@ -38,14 +41,26 @@ class Analyzed {
         print("");
       }
       final String data = txtData(e.data);
-      final Analysis analysis = analyzer.analyze(data);
+      Analysis analysis = analyzer.analyze(data);
+
+      // Re-analyze with the nested lookups, so the total is checked too
+      SpfTree? tree;
+      if (recursive && analysis is SpfAnalysis) {
+        tree = SpfTree(dns);
+        await tree.resolve(e.name, analysis);
+        analysis = SpfAnalyzer(nestedLookups: tree.lookups).analyze(data);
+      }
 
       // Descriptions (last column) are never shortened
       _printRows(analysis.rows, analyzer.type, analyzer.columns, fit: true);
+      if (tree != null) {
+        print("");
+        _printRows(tree.rows, "SPF", ["Record", "Lookups", "Status"]);
+      }
       for (final String note in analysis.notes) {
         print("Note: $note");
       }
-      for (final String warning in analysis.warnings) {
+      for (final String warning in [...analysis.warnings, ...?tree?.warnings]) {
         print("Warning: $warning");
       }
     }

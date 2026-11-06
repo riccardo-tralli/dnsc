@@ -109,7 +109,18 @@ Future<void> main(List<String> arguments) async {
         return;
       }
 
-      final bool analyze = args.flag("analyze");
+      final bool recursive = args.flag("recursive");
+      if (recursive && args.command!.name != "spf") {
+        print(
+          "--recursive is only supported by spf. Use --help for usage information.",
+        );
+        exitCode = usageErrorExitCode;
+        if (loop) {
+          continue;
+        }
+        return;
+      }
+      final bool analyze = args.flag("analyze") || recursive;
       if (analyze &&
           !const ["spf", "dkim", "dmarc"].contains(args.command!.name)) {
         print(
@@ -188,7 +199,9 @@ Future<void> main(List<String> arguments) async {
         case "spf":
           bool isSpf(Record e) => e.data.contains("v=spf1");
           if (analyze) {
-            await Analyzed(dns).query(domain, SpfAnalyzer(), filter: isSpf);
+            await Analyzed(
+              dns,
+            ).query(domain, SpfAnalyzer(), filter: isSpf, recursive: recursive);
           } else {
             await Typed(dns).query(domain, RecordType.txt, filter: isSpf);
           }
