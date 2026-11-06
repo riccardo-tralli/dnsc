@@ -23,7 +23,11 @@ class SpfAnalyzer extends RecordAnalyzer {
   /// DNS lookups of the included and redirected records, when resolved
   final int? nestedLookups;
 
-  const SpfAnalyzer({this.nestedLookups});
+  /// Term ("include" or "redirect") the record is evaluated through, when
+  /// nested in another record
+  final String? via;
+
+  const SpfAnalyzer({this.nestedLookups, this.via});
 
   @override
   String get type => "SPF";
@@ -41,7 +45,25 @@ class SpfAnalyzer extends RecordAnalyzer {
     final List<List<String>> rows = [];
     final List<(String, String)> targets = [];
     final List<String> warnings = [];
-    final List<String> terms = data.trim().split(RegExp(r"\s+"));
+    final String record = data.trim();
+    final List<String> terms = record.split(RegExp(r"\s+"));
+
+    // Terms are still split on any whitespace, so the breakdown stays
+    // readable, but only spaces are valid separators (RFC 7208, 4.6.1)
+    for (final (int index, RegExpMatch separator) in RegExp(
+      r"\s+",
+    ).allMatches(record).indexed) {
+      final Set<String> invalid = separator[0]!.runes
+          .where((e) => e != 0x20)
+          .map(_whitespaceName)
+          .toSet();
+      if (invalid.isNotEmpty) {
+        warnings.add(
+          "${invalid.join(", ")} between '${terms[index]}' and '${terms[index + 1]}': "
+          "only spaces are allowed, strict receivers return permerror.",
+        );
+      }
+    }
 
     if (terms.first.toLowerCase() != "v=spf1") {
       warnings.add("The record does not start with 'v=spf1': it is not SPF.");
@@ -132,9 +154,10 @@ class SpfAnalyzer extends RecordAnalyzer {
         warnings.add(
           "'+all' authorizes any server to send mail as the domain.",
         );
-      case "?":
+      // In an include, no match is fine: the evaluation goes on in the parent
+      case "?" when via != "include":
         warnings.add("'?all' gives no protection against spoofing.");
-      case null when !redirect:
+      case null when !redirect && via != "include":
         warnings.add(
           "No 'all' mechanism: unmatched senders get a neutral result.",
         );
@@ -147,7 +170,8 @@ class SpfAnalyzer extends RecordAnalyzer {
       targets.removeWhere((e) => e.$1 == "redirect");
     }
     final int total = lookups + (nestedLookups ?? 0);
-    if (total > _maxLookups) {
+    // Nested records count towards the limit of the parent record
+    if (via == null && total > _maxLookups) {
       warnings.add(
         "Too many DNS lookups ($total, max $_maxLookups): receivers return permerror.",
       );
@@ -165,6 +189,14 @@ class SpfAnalyzer extends RecordAnalyzer {
       warnings: warnings,
     );
   }
+
+  String _whitespaceName(int rune) => switch (rune) {
+    0x0a => "Newline (LF)",
+    0x0d => "Carriage return (CR)",
+    0x09 => "Tab",
+    0xa0 => "Non-breaking space",
+    _ => "Character U+${rune.toRadixString(16).toUpperCase().padLeft(4, "0")}",
+  };
 
   String? _mechanismDescription(String name, String value, String qualifier) {
     final String result = _results[qualifier]!;

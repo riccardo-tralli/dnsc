@@ -90,9 +90,14 @@ class SpfTree {
         continue;
       }
 
-      final SpfAnalysis child = const SpfAnalyzer().analyze(records.first);
+      final SpfAnalysis child = SpfAnalyzer(via: term).analyze(records.first);
       lookups += child.lookups;
-      rows.add([label, child.lookups.toString(), "OK"]);
+      rows.add([
+        label,
+        child.lookups.toString(),
+        child.warnings.isEmpty ? "OK" : "Warning",
+      ]);
+      warnings.addAll(child.warnings.map((e) => "$term:$target: $e"));
       await _follow(child, depth + 1, {...path, domain});
     }
 
