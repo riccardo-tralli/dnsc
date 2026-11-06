@@ -17,23 +17,41 @@ class DkimAnalyzer extends RecordAnalyzer {
 
   @override
   Analysis analyze(String data) {
-    final List<String> warnings = [];
-    final List<(String, String)> tags = parseTags(data, warnings);
+    final List<Issue> issues = [];
+    final List<(String, String)> tags = parseTags(data, issues);
     final Map<String, String> values = {
       for (final (name, value) in tags) name: value,
     };
 
     if (values.containsKey("v") &&
         (tags.first.$1 != "v" || values["v"] != "DKIM1")) {
-      warnings.add("'v' must be the first tag and equal to 'DKIM1'.");
+      issues.add(
+        Issue(
+          Severity.error,
+          "'v' must be the first tag and equal to 'DKIM1'.",
+          [
+            for (final (int row, (String, String) tag) in tags.indexed)
+              if (tag.$1 == "v") row,
+          ],
+        ),
+      );
     }
     if (!values.containsKey("p")) {
-      warnings.add("Missing required 'p' tag.");
+      issues.add(Issue(Severity.error, "Missing required 'p' tag."));
     }
 
     final List<List<String>> rows = [
-      for (final (name, value) in tags)
-        [name, value, _describe(name, value, values["k"], warnings)],
+      for (final (int row, (String name, String value)) in tags.indexed)
+        [
+          name,
+          value,
+          _describe(
+            name,
+            value,
+            values["k"],
+            (severity, message) => issues.add(Issue(severity, message, [row])),
+          ),
+        ],
     ];
 
     return Analysis(
@@ -41,33 +59,31 @@ class DkimAnalyzer extends RecordAnalyzer {
       notes: [
         if (!values.containsKey("k")) "Key type not set defaults to rsa.",
       ],
-      warnings: warnings,
+      issues: issues,
     );
   }
 
-  String _describe(
-    String name,
-    String value,
-    String? keyType,
-    List<String> warnings,
-  ) {
+  String _describe(String name, String value, String? keyType, Report report) {
     switch (name) {
       case "v":
         return "DKIM version";
       case "k":
         if (value != "rsa" && value != "ed25519") {
-          warnings.add("Unknown key type '$value'.");
+          report(Severity.error, "Unknown key type '$value'.");
         }
         return "Key type";
       case "p":
-        return _describeKey(value, keyType ?? "rsa", warnings);
+        return _describeKey(value, keyType ?? "rsa", report);
       case "h":
         final List<String> hashes = value
             .split(":")
             .map((e) => e.trim())
             .toList();
         if (!hashes.contains("sha256")) {
-          warnings.add("'h=$value' does not allow sha256: sha1 is insecure.");
+          report(
+            Severity.error,
+            "'h=$value' does not allow sha256: sha1 is insecure.",
+          );
         }
         return "Allowed hash algorithms";
       case "s":
@@ -78,7 +94,8 @@ class DkimAnalyzer extends RecordAnalyzer {
             .map((e) => e.trim())
             .toList();
         if (flags.contains("y")) {
-          warnings.add(
+          report(
+            Severity.warning,
             "Testing mode (t=y): receivers may treat mail as unsigned.",
           );
         }
@@ -100,17 +117,17 @@ class DkimAnalyzer extends RecordAnalyzer {
     }
   }
 
-  String _describeKey(String value, String keyType, List<String> warnings) {
+  String _describeKey(String value, String keyType, Report report) {
     final String key = value.replaceAll(RegExp(r"\s"), "");
     if (key.isEmpty) {
-      warnings.add("Empty public key: the key has been revoked.");
+      report(Severity.error, "Empty public key: the key has been revoked.");
       return "Public key (revoked)";
     }
     final List<int> bytes;
     try {
       bytes = base64.decode(base64.normalize(key));
     } on FormatException {
-      warnings.add("The public key is not valid base64.");
+      report(Severity.error, "The public key is not valid base64.");
       return "Public key (invalid)";
     }
     if (keyType == "ed25519") {
@@ -118,15 +135,19 @@ class DkimAnalyzer extends RecordAnalyzer {
     }
     final int? bits = _rsaKeyBits(bytes);
     if (bits == null) {
-      warnings.add("The public key is not a valid RSA key.");
+      report(Severity.error, "The public key is not a valid RSA key.");
       return "Public key (invalid)";
     }
     if (bits < _minKeyBits) {
-      warnings.add(
+      report(
+        Severity.error,
         "$bits-bit RSA key is insecure: use $_recommendedKeyBits bits.",
       );
     } else if (bits < _recommendedKeyBits) {
-      warnings.add("$bits-bit RSA key is weak: use $_recommendedKeyBits bits.");
+      report(
+        Severity.warning,
+        "$bits-bit RSA key is weak: use $_recommendedKeyBits bits.",
+      );
     }
     return "Public key ($bits-bit RSA)";
   }

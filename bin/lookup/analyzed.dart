@@ -31,7 +31,7 @@ class Analyzed {
 
     if (records.length > 1) {
       print(
-        "Warning: ${records.length} ${analyzer.type} records found, receivers treat this as an error.",
+        "${Severity.error.label}: ${records.length} ${analyzer.type} records found, receivers treat this as an error.",
       );
       print("");
     }
@@ -52,37 +52,62 @@ class Analyzed {
       }
 
       // Descriptions (last column) are never shortened
-      _printRows(analysis.rows, analyzer.type, analyzer.columns, fit: true);
+      _printRows(
+        analysis.rows,
+        analyzer.type,
+        analyzer.columns,
+        analysis.severityOf,
+        fit: true,
+      );
+      final List<Issue> issues = [...analysis.issues];
       if (tree != null) {
+        final Analysis nested = tree.analysis;
+        final Analysis root = analysis;
         print("");
-        _printRows(tree.rows, "SPF", ["Record", "Lookups", "Status"]);
+        _printRows(
+          nested.rows,
+          "SPF",
+          ["Record", "Lookups", "Status"],
+          // The first row is the queried record, whose issues are above
+          (row) => row == 0 ? maxSeverity(root.issues) : nested.severityOf(row),
+        );
+        issues.addAll(nested.issues);
+      }
+
+      for (final Severity severity in Severity.values.reversed) {
+        for (final Issue issue in issues.where((e) => e.severity == severity)) {
+          print("${severity.label}: ${issue.message}");
+        }
       }
       for (final String note in analysis.notes) {
         print("Note: $note");
       }
-      for (final String warning in [...analysis.warnings, ...?tree?.warnings]) {
-        print("Warning: $warning");
-      }
     }
   }
 
-  /// Prints analysis rows, shortening all but the last column if [fit]
+  /// Prints analysis rows after a check column that marks the rows with
+  /// issues, shortening all but the last column if [fit]
   void _printRows(
     List<List<String>> rows,
     String type,
-    List<String> columns, {
+    List<String> columns,
+    Severity? Function(int) severityOf, {
     bool fit = false,
   }) {
     String cell(List<String> row, int i) =>
         fit && i < row.length - 1 ? dns.fitData(row[i]) : row[i];
-    dns.printRecords<List<String>>(
-      rows,
+    dns.printRecords<(int, List<String>)>(
+      rows.indexed.toList(),
       type: type,
-      columns: columns,
-      row: (row) => [for (int i = 0; i < row.length; i++) cell(row, i)],
-      line: (row) => [
-        for (int i = 0; i < row.length; i++)
-          if (row[i].isNotEmpty) cell(row, i),
+      columns: ["Check", ...columns],
+      row: (e) => [
+        severityOf(e.$1)?.marker ?? "",
+        for (int i = 0; i < e.$2.length; i++) cell(e.$2, i),
+      ],
+      line: (e) => [
+        ?severityOf(e.$1)?.marker,
+        for (int i = 0; i < e.$2.length; i++)
+          if (e.$2[i].isNotEmpty) cell(e.$2, i),
       ].join(" | "),
     );
   }

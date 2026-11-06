@@ -75,6 +75,13 @@ With `-a`, `--analyze` the `spf`, `dkim` and `dmarc` commands break each record 
 
 Multiple records of the same kind are also reported, as receivers treat them as an error.
 
+The `Check` column marks the rows with an issue, explained below the table:
+
+- `ERROR`: the record is invalid or unsafe (e.g. syntax errors, `+all`, too many lookups, revoked or insecure keys)
+- `WARN`: the record works but could be improved (e.g. `?all`, `p=none`, deprecated mechanisms, weak keys)
+
+Issues about the record as a whole, such as a missing required tag, are only listed below the table.
+
 The SPF lookup count only covers the queried record. With `-R`, `--recursive` (`spf` only, implies `--analyze`) every `include` and `redirect` is resolved recursively: a second table shows the include tree with the lookups of each record, and the count covers the whole evaluation. Included domains without an SPF record, with multiple SPF records, and include loops are reported, as receivers return a permerror.
 
 ## Output Modes

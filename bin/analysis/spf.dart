@@ -44,8 +44,9 @@ class SpfAnalyzer extends RecordAnalyzer {
   SpfAnalysis analyze(String data) {
     final List<List<String>> rows = [];
     final List<(String, String)> targets = [];
-    final List<String> warnings = [];
+    final List<Issue> issues = [];
     final String record = data.trim();
+    // One row per term, so a term index is also its row index
     final List<String> terms = record.split(RegExp(r"\s+"));
 
     // Terms are still split on any whitespace, so the breakdown stays
@@ -58,31 +59,44 @@ class SpfAnalyzer extends RecordAnalyzer {
           .map(_whitespaceName)
           .toSet();
       if (invalid.isNotEmpty) {
-        warnings.add(
-          "${invalid.join(", ")} between '${terms[index]}' and '${terms[index + 1]}': "
-          "only spaces are allowed, strict receivers return permerror.",
+        issues.add(
+          Issue(
+            Severity.error,
+            "${invalid.join(", ")} between '${terms[index]}' and '${terms[index + 1]}': "
+            "only spaces are allowed, strict receivers return permerror.",
+            [index, index + 1],
+          ),
         );
       }
     }
 
     if (terms.first.toLowerCase() != "v=spf1") {
-      warnings.add("The record does not start with 'v=spf1': it is not SPF.");
+      issues.add(
+        Issue(
+          Severity.error,
+          "The record does not start with 'v=spf1': it is not SPF.",
+          [0],
+        ),
+      );
     }
 
     int lookups = 0;
-    String? all;
-    bool redirect = false;
-    bool afterAll = false;
-    final Set<String> modifiers = {};
+    int? all;
+    String? allQualifier;
+    int? redirect;
+    final Map<String, int> modifiers = {};
 
     for (final (int index, String term) in terms.indexed) {
+      void report(Severity severity, String message) =>
+          issues.add(Issue(severity, message, [index]));
+
       final String lower = term.toLowerCase();
       if (index == 0 && lower == "v=spf1") {
         rows.add(["", "v", "spf1", "SPF version 1"]);
         continue;
       }
       if (all != null) {
-        afterAll = true;
+        report(Severity.warning, "'$term' comes after 'all': never evaluated.");
       }
 
       // Modifiers: name=value
@@ -93,17 +107,23 @@ class SpfAnalyzer extends RecordAnalyzer {
       if (modifier != null) {
         final String name = modifier[1]!.toLowerCase();
         final String value = modifier[2]!;
-        if (!modifiers.add(name) && (name == "redirect" || name == "exp")) {
-          warnings.add(
-            "Duplicate '$name' modifier: receivers return permerror.",
+        if (modifiers.containsKey(name) &&
+            (name == "redirect" || name == "exp")) {
+          issues.add(
+            Issue(
+              Severity.error,
+              "Duplicate '$name' modifier: receivers return permerror.",
+              [modifiers[name]!, index],
+            ),
           );
         }
+        modifiers[name] ??= index;
         if (_lookupTerms.contains(name)) {
           lookups++;
         }
         rows.add(["", name, value, _modifierDescription(name, value)]);
         if (name == "redirect") {
-          redirect = true;
+          redirect ??= index;
           targets.add((name, value));
         }
         continue;
@@ -125,18 +145,23 @@ class SpfAnalyzer extends RecordAnalyzer {
 
       final String? description = _mechanismDescription(name, value, qualifier);
       if (description == null) {
-        warnings.add("Unknown mechanism '$name': receivers return permerror.");
+        report(
+          Severity.error,
+          "Unknown mechanism '$name': receivers return permerror.",
+        );
       }
       if (_lookupTerms.contains(name)) {
         lookups++;
       }
       if (name == "ptr") {
-        warnings.add(
+        report(
+          Severity.warning,
           "The 'ptr' mechanism is deprecated and should not be used.",
         );
       }
-      if (name == "all") {
-        all ??= qualifier;
+      if (name == "all" && all == null) {
+        all = index;
+        allQualifier = qualifier;
       }
       if (name == "include") {
         targets.add((name, value));
@@ -149,31 +174,50 @@ class SpfAnalyzer extends RecordAnalyzer {
       ]);
     }
 
-    switch (all) {
+    switch (allQualifier) {
       case "+":
-        warnings.add(
-          "'+all' authorizes any server to send mail as the domain.",
+        issues.add(
+          Issue(
+            Severity.error,
+            "'+all' authorizes any server to send mail as the domain.",
+            [all!],
+          ),
         );
       // In an include, no match is fine: the evaluation goes on in the parent
       case "?" when via != "include":
-        warnings.add("'?all' gives no protection against spoofing.");
-      case null when !redirect && via != "include":
-        warnings.add(
-          "No 'all' mechanism: unmatched senders get a neutral result.",
+        issues.add(
+          Issue(
+            Severity.warning,
+            "'?all' gives no protection against spoofing.",
+            [all!],
+          ),
+        );
+      case null when redirect == null && via != "include":
+        issues.add(
+          Issue(
+            Severity.warning,
+            "No 'all' mechanism: unmatched senders get a neutral result.",
+          ),
         );
     }
-    if (afterAll) {
-      warnings.add("Terms after 'all' are never evaluated.");
-    }
-    if (all != null && redirect) {
-      warnings.add("'redirect' is ignored because the record has 'all'.");
+    if (all != null && redirect != null) {
+      issues.add(
+        Issue(
+          Severity.warning,
+          "'redirect' is ignored because the record has 'all'.",
+          [redirect],
+        ),
+      );
       targets.removeWhere((e) => e.$1 == "redirect");
     }
     final int total = lookups + (nestedLookups ?? 0);
     // Nested records count towards the limit of the parent record
     if (via == null && total > _maxLookups) {
-      warnings.add(
-        "Too many DNS lookups ($total, max $_maxLookups): receivers return permerror.",
+      issues.add(
+        Issue(
+          Severity.error,
+          "Too many DNS lookups ($total, max $_maxLookups): receivers return permerror.",
+        ),
       );
     }
 
@@ -186,7 +230,7 @@ class SpfAnalyzer extends RecordAnalyzer {
             ? "DNS lookups: $lookups/$_maxLookups (nested includes and redirects not counted, use --recursive)."
             : "DNS lookups: $total/$_maxLookups ($lookups in this record, $nestedLookups in nested records).",
       ],
-      warnings: warnings,
+      issues: issues,
     );
   }
 
@@ -258,6 +302,6 @@ class SpfAnalysis extends Analysis {
     required this.lookups,
     required this.targets,
     super.notes,
-    super.warnings,
+    super.issues,
   });
 }

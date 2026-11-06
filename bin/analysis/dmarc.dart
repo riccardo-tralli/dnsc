@@ -30,38 +30,78 @@ class DmarcAnalyzer extends RecordAnalyzer {
 
   @override
   Analysis analyze(String data) {
-    final List<String> warnings = [];
-    final List<(String, String)> tags = parseTags(data, warnings);
+    final List<Issue> issues = [];
+    final List<(String, String)> tags = parseTags(data, issues);
     final Map<String, String> values = {
       for (final (name, value) in tags) name.toLowerCase(): value,
     };
+    // Rows of a tag, for the issues found by looking at the whole record
+    List<int> rowsOf(String name) => [
+      for (final (int row, (String, String) tag) in tags.indexed)
+        if (tag.$1.toLowerCase() == name) row,
+    ];
 
     if (tags.isEmpty || tags.first.$1 != "v" || tags.first.$2 != "DMARC1") {
-      warnings.add(
-        "The record does not start with 'v=DMARC1': receivers ignore it.",
+      issues.add(
+        Issue(
+          Severity.error,
+          "The record does not start with 'v=DMARC1': receivers ignore it.",
+          rowsOf("v"),
+        ),
       );
     }
 
     final List<List<String>> rows = [
-      for (final (name, value) in tags)
-        [name, value, _describe(name.toLowerCase(), value, warnings)],
+      for (final (int row, (String name, String value)) in tags.indexed)
+        [
+          name,
+          value,
+          _describe(
+            name.toLowerCase(),
+            value,
+            (severity, message) => issues.add(Issue(severity, message, [row])),
+          ),
+        ],
     ];
 
     final String? policy = values["p"]?.toLowerCase();
     if (policy == null) {
-      warnings.add("Missing required 'p' tag.");
+      issues.add(Issue(Severity.error, "Missing required 'p' tag."));
     } else if (policy == "none") {
-      warnings.add("'p=none' only monitors: failing mail is still delivered.");
+      issues.add(
+        Issue(
+          Severity.warning,
+          "'p=none' only monitors: failing mail is still delivered.",
+          rowsOf("p"),
+        ),
+      );
     }
     if (values["sp"]?.toLowerCase() == "none" && policy != "none") {
-      warnings.add("'sp=none' leaves subdomains unprotected.");
+      issues.add(
+        Issue(
+          Severity.warning,
+          "'sp=none' leaves subdomains unprotected.",
+          rowsOf("sp"),
+        ),
+      );
     }
     final int? pct = int.tryParse(values["pct"] ?? "");
     if (pct != null && pct >= 0 && pct < 100) {
-      warnings.add("'pct=$pct': the policy only applies to part of the mail.");
+      issues.add(
+        Issue(
+          Severity.warning,
+          "'pct=$pct': the policy only applies to part of the mail.",
+          rowsOf("pct"),
+        ),
+      );
     }
     if (!values.containsKey("rua")) {
-      warnings.add("No 'rua' tag: no aggregate reports will be received.");
+      issues.add(
+        Issue(
+          Severity.warning,
+          "No 'rua' tag: no aggregate reports will be received.",
+        ),
+      );
     }
 
     return Analysis(
@@ -72,24 +112,27 @@ class DmarcAnalyzer extends RecordAnalyzer {
         if (!values.containsKey("adkim") || !values.containsKey("aspf"))
           "Alignment not set defaults to relaxed.",
       ],
-      warnings: warnings,
+      issues: issues,
     );
   }
 
-  String _describe(String name, String value, List<String> warnings) {
+  String _describe(String name, String value, Report report) {
     switch (name) {
       case "v":
         return "DMARC version";
       case "p":
-        return "Domain policy: ${_lookup(_policies, name, value, warnings)}";
+        return "Domain policy: ${_lookup(_policies, name, value, report)}";
       case "sp":
-        return "Subdomain policy: ${_lookup(_policies, name, value, warnings)}";
+        return "Subdomain policy: ${_lookup(_policies, name, value, report)}";
       case "np":
-        return "Non-existent subdomain policy: ${_lookup(_policies, name, value, warnings)}";
+        return "Non-existent subdomain policy: ${_lookup(_policies, name, value, report)}";
       case "pct":
         final int? pct = int.tryParse(value);
         if (pct == null || pct < 0 || pct > 100) {
-          warnings.add("Invalid 'pct' value '$value': must be 0-100.");
+          report(
+            Severity.error,
+            "Invalid 'pct' value '$value': must be 0-100.",
+          );
           return "Invalid percentage";
         }
         return "Policy applied to $pct% of failing mail";
@@ -98,9 +141,9 @@ class DmarcAnalyzer extends RecordAnalyzer {
       case "ruf":
         return "Failure reports to ${_uris(value)}";
       case "adkim":
-        return "DKIM alignment: ${_lookup(_alignments, name, value, warnings)}";
+        return "DKIM alignment: ${_lookup(_alignments, name, value, report)}";
       case "aspf":
-        return "SPF alignment: ${_lookup(_alignments, name, value, warnings)}";
+        return "SPF alignment: ${_lookup(_alignments, name, value, report)}";
       case "fo":
         final List<String> options = value
             .split(":")
@@ -108,7 +151,7 @@ class DmarcAnalyzer extends RecordAnalyzer {
             .toList();
         for (final String option in options) {
           if (!_failureOptions.containsKey(option)) {
-            warnings.add("Invalid 'fo' option '$option'.");
+            report(Severity.error, "Invalid 'fo' option '$option'.");
           }
         }
         return "Failure reports when ${options.map((e) => _failureOptions[e] ?? e).join(" or ")}";
@@ -117,7 +160,10 @@ class DmarcAnalyzer extends RecordAnalyzer {
       case "ri":
         final int? seconds = int.tryParse(value);
         if (seconds == null) {
-          warnings.add("Invalid 'ri' value '$value': must be seconds.");
+          report(
+            Severity.error,
+            "Invalid 'ri' value '$value': must be seconds.",
+          );
           return "Invalid report interval";
         }
         return seconds % 3600 == 0
@@ -132,11 +178,11 @@ class DmarcAnalyzer extends RecordAnalyzer {
     Map<String, String> meanings,
     String name,
     String value,
-    List<String> warnings,
+    Report report,
   ) {
     final String? meaning = meanings[value.toLowerCase()];
     if (meaning == null) {
-      warnings.add("Invalid '$name' value '$value'.");
+      report(Severity.error, "Invalid '$name' value '$value'.");
       return "invalid";
     }
     return meaning;

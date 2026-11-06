@@ -15,7 +15,9 @@ class SpfTree {
 
   /// One row per record: (term:domain indented by depth, lookups, status)
   final List<List<String>> rows = [];
-  final List<String> warnings = [];
+
+  /// Issues of the nested records, each on the row of its record
+  final List<Issue> issues = [];
 
   /// DNS lookups of the nested records, the root record excluded
   int lookups = 0;
@@ -24,8 +26,10 @@ class SpfTree {
 
   SpfTree(this.dns);
 
+  Analysis get analysis => Analysis(rows, issues: issues);
+
   Future<void> resolve(String domain, SpfAnalysis analysis) async {
-    rows.add([domain, analysis.lookups.toString(), "OK"]);
+    rows.add([domain, analysis.lookups.toString(), "Resolved"]);
     await _follow(analysis, 1, {_normalize(domain)});
   }
 
@@ -37,6 +41,9 @@ class SpfTree {
     for (final (String term, String target) in analysis.targets) {
       final String label = "${"  " * depth}$term:$target";
       final String domain = _normalize(target);
+      final int row = rows.length;
+      void report(Severity severity, String message) =>
+          issues.add(Issue(severity, "$term:$target: $message", [row]));
 
       if (target.contains("%{")) {
         rows.add([label, "", "Macro, not resolved"]);
@@ -44,11 +51,15 @@ class SpfTree {
       }
       if (path.contains(domain)) {
         rows.add([label, "", "Loop"]);
-        warnings.add("$term:$target loops back: receivers return permerror.");
+        report(
+          Severity.error,
+          "Loops back to an including record: receivers return permerror.",
+        );
         continue;
       }
       if (_records >= _maxRecords) {
         rows.add([label, "", "Not followed"]);
+        report(Severity.warning, "Not followed: too many records.");
         continue;
       }
       _records++;
@@ -66,44 +77,44 @@ class SpfTree {
       } on DNSLookupException catch (e) {
         if (e.statusCode != _nxDomain) {
           rows.add([label, "", "Lookup failed"]);
-          warnings.add("$term:$target lookup failed: ${e.message}.");
+          report(Severity.warning, "Lookup failed: ${e.message}.");
           continue;
         }
       } catch (e) {
         rows.add([label, "", "Lookup failed"]);
-        warnings.add("$term:$target lookup failed: $e.");
+        report(Severity.warning, "Lookup failed: $e.");
         continue;
       }
 
       if (records.isEmpty) {
         rows.add([label, "", "No SPF record"]);
-        warnings.add(
-          "$term:$target has no SPF record: receivers return permerror.",
-        );
+        report(Severity.error, "No SPF record: receivers return permerror.");
         continue;
       }
       if (records.length > 1) {
         rows.add([label, "", "Multiple SPF records"]);
-        warnings.add(
-          "$term:$target has ${records.length} SPF records: receivers return permerror.",
+        report(
+          Severity.error,
+          "${records.length} SPF records: receivers return permerror.",
         );
         continue;
       }
 
       final SpfAnalysis child = SpfAnalyzer(via: term).analyze(records.first);
       lookups += child.lookups;
-      rows.add([
-        label,
-        child.lookups.toString(),
-        child.warnings.isEmpty ? "OK" : "Warning",
-      ]);
-      warnings.addAll(child.warnings.map((e) => "$term:$target: $e"));
+      rows.add([label, child.lookups.toString(), "Resolved"]);
+      for (final Issue issue in child.issues) {
+        report(issue.severity, issue.message);
+      }
       await _follow(child, depth + 1, {...path, domain});
     }
 
     if (depth == 1 && _records >= _maxRecords) {
-      warnings.add(
-        "Stopped after $_maxRecords records: the lookup count is partial.",
+      issues.add(
+        Issue(
+          Severity.warning,
+          "Stopped after $_maxRecords records: the lookup count is partial.",
+        ),
       );
     }
   }
