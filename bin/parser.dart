@@ -57,6 +57,12 @@ ArgParser buildParser() {
       negatable: false,
       help: "Only print the last record of the answer.",
     )
+    ..addFlag(
+      "analyze",
+      abbr: "a",
+      negatable: false,
+      help: "Break down SPF, DKIM and DMARC records and check them.",
+    )
     // * Lookup
     ..addCommand("a")
     ..addCommand("aaaa")
@@ -100,4 +106,5 @@ void printUsage(ArgParser argParser) {
   print("   dnsc mx example.com");
   print("   dnsc --simple cname example.com");
   print("   dnsc -t 5 -n 1.1.1.1 cname example.com");
+  print("   dnsc --analyze spf example.com");
 }

@@ -2,6 +2,10 @@ import "dart:io";
 
 import "package:args/args.dart";
 import "package:dnsolve/dnsolve.dart";
+import "analysis/dkim.dart";
+import "analysis/dmarc.dart";
+import "analysis/spf.dart";
+import "lookup/analyzed.dart";
 import "lookup/dns_lookup.dart";
 import "lookup/typed.dart";
 import "lookup/mx.dart";
@@ -105,6 +109,19 @@ Future<void> main(List<String> arguments) async {
         return;
       }
 
+      final bool analyze = args.flag("analyze");
+      if (analyze &&
+          !const ["spf", "dkim", "dmarc"].contains(args.command!.name)) {
+        print(
+          "--analyze is only supported by spf, dkim and dmarc. Use --help for usage information.",
+        );
+        exitCode = usageErrorExitCode;
+        if (loop) {
+          continue;
+        }
+        return;
+      }
+
       // Configuration
       dns = DnsLookup(
         nameserver: args.option("nameserver"),
@@ -169,11 +186,12 @@ Future<void> main(List<String> arguments) async {
           break;
         // ! Advanced commands
         case "spf":
-          await Typed(dns).query(
-            domain,
-            RecordType.txt,
-            filter: (e) => e.data.contains("v=spf1"),
-          );
+          bool isSpf(Record e) => e.data.contains("v=spf1");
+          if (analyze) {
+            await Analyzed(dns).query(domain, SpfAnalyzer(), filter: isSpf);
+          } else {
+            await Typed(dns).query(domain, RecordType.txt, filter: isSpf);
+          }
           break;
         case "dkim":
           if (!args.command!.options.any((e) => e == "selector")) {
@@ -187,12 +205,22 @@ Future<void> main(List<String> arguments) async {
             return;
           }
           final String? selector = args.command!.option("selector");
-          await Typed(
-            dns,
-          ).query("$selector._domainkey.$domain", RecordType.txt);
+          if (analyze) {
+            await Analyzed(
+              dns,
+            ).query("$selector._domainkey.$domain", DkimAnalyzer());
+          } else {
+            await Typed(
+              dns,
+            ).query("$selector._domainkey.$domain", RecordType.txt);
+          }
           break;
         case "dmarc":
-          await Typed(dns).query("_dmarc.$domain", RecordType.txt);
+          if (analyze) {
+            await Analyzed(dns).query("_dmarc.$domain", DmarcAnalyzer());
+          } else {
+            await Typed(dns).query("_dmarc.$domain", RecordType.txt);
+          }
           break;
         case "m365":
           await M365(dns).query(domain);

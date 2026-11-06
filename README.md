@@ -19,6 +19,7 @@ It's built on a [fork](https://github.com/riccardo-tralli/dnsolve) of [DNSolve](
 - Table output by default, with a simplified output mode
 - Optional row numbering and full (non-truncated) output
 - Advanced helper commands for SPF, DKIM, and DMARC checks
+- Structured analysis of SPF, DKIM, and DMARC records with `--analyze`
 
 ## Usage
 
@@ -40,6 +41,7 @@ dnsc <flags> [command] [domain]
 | `-r`, `--raw`        | Print raw output without formatting       |
 | `-1`, `--first`      | Only print the first record               |
 | `-9`, `--last`       | Only print the last record                |
+| `-a`, `--analyze`    | Break down SPF, DKIM and DMARC records    |
 
 ## Commands
 
@@ -61,6 +63,16 @@ dnsc <flags> [command] [domain]
 - `dkim`: queries `TXT` on `<selector>._domainkey.<domain>` provided with `-s` or `--selector`
 - `dmarc`: queries `TXT` on `_dmarc.<domain>`
 - `m365`: queries various records for Microsoft 365 implementation
+
+### Record Analysis
+
+With `-a`, `--analyze` the `spf`, `dkim` and `dmarc` commands break each record down into its terms or tags, describe what each one does and report common problems:
+
+- `spf`: qualifiers and mechanisms, DNS lookup count (limit 10), `+all`/`?all`, missing `all`, terms after `all`, deprecated `ptr`, unknown mechanisms
+- `dmarc`: policies, alignment, report addresses and options, `p=none`, `pct` below 100, missing `rua`, invalid values
+- `dkim`: key type and size, revoked keys, weak RSA keys (below 2048 bits), testing mode, `sha1`-only hashes
+
+Multiple records of the same kind are also reported, as receivers treat them as an error.
 
 ## Output Modes
 
@@ -96,6 +108,11 @@ dnsc spf example.com
 
 # DKIM check
 dnsc dkim example.com -s key1
+
+# SPF, DMARC and DKIM analysis
+dnsc --analyze spf example.com
+dnsc -a dmarc example.com
+dnsc -a dkim example.com -s key1
 
 # First MX record only
 dnsc mx example.com --first
