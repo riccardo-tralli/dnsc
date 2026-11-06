@@ -87,7 +87,7 @@ Future<void> main(List<String> arguments) async {
       }
 
       // Options validation
-      final int? timeout = int.tryParse(args.option("timeout") ?? "5");
+      final int? timeout = int.tryParse(args.option("timeout")!);
       if (timeout == null || timeout <= 0) {
         print(
           "Timeout must be a positive integer. Use --help for usage information.",

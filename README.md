@@ -24,52 +24,54 @@ It's built on a [fork](https://github.com/riccardo-tralli/dnsolve) of [DNSolve](
 ## Usage
 
 ```bash
-dnsc <flags> [command] [domain]
+dnsc [flags] <command> <domain> [command options]
 ```
+
+Run `dnsc` without arguments to start an interactive session, where each line is a command.
 
 ## Global Flags
 
-| Flag                 | Description                               |
-| -------------------- | ----------------------------------------- |
-| `-h`, `--help`       | Print usage information                   |
-| `--version`          | Print the current version                 |
-| `-n`, `--nameserver` | Use a custom nameserver for lookups       |
-| `-t`, `--timeout`    | Timeout in seconds (default: `5`)         |
-| `-c`, `--count`      | Prepend record number to each output line |
-| `-f`, `--full`       | Print full values without truncation      |
-| `--simple`           | Print simple output (no ASCII table)      |
-| `-r`, `--raw`        | Print raw output without formatting       |
-| `-1`, `--first`      | Only print the first record               |
-| `-9`, `--last`       | Only print the last record                |
-| `-a`, `--analyze`    | Break down SPF, DKIM and DMARC records    |
-| `-R`, `--recursive`  | Follow SPF includes and redirects         |
+| Flag                        | Description                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------- |
+| `-h`, `--help`              | Print the usage information                                                                   |
+| `--version`                 | Print the version                                                                             |
+| `-n`, `--nameserver=<ip>`   | Query this nameserver instead of the system one                                               |
+| `-t`, `--timeout=<seconds>` | Timeout of each DNS query (default: `5`)                                                      |
+| `-c`, `--count`             | Number the output rows                                                                        |
+| `-f`, `--full`              | Print long values in full instead of truncating them                                          |
+| `--simple`                  | Print plain lines instead of tables                                                           |
+| `-r`, `--raw`               | Same as `--simple --full`                                                                     |
+| `-1`, `--first`             | Print only the first record of the answer                                                     |
+| `-9`, `--last`              | Print only the last record of the answer                                                      |
+| `-a`, `--analyze`           | Break `spf`, `dkim` and `dmarc` records down into their terms or tags and check them          |
+| `-R`, `--recursive`         | Follow SPF includes and redirects and count all DNS lookups (`spf` only, implies `--analyze`) |
 
 ## Commands
 
 ### Standard DNS Commands
 
-- `a`
-- `aaaa`
-- `cname`
-- `mx`
-- `ns`
-- `ptr`
-- `soa`
-- `srv`
-- `txt`
+- `a`: IPv4 addresses (A records)
+- `aaaa`: IPv6 addresses (AAAA records)
+- `cname`: canonical name (CNAME record)
+- `mx`: mail servers, sorted by priority (MX records)
+- `ns`: name servers (NS records)
+- `ptr`: reverse lookup of an IP address (PTR records)
+- `soa`: start of authority of the zone (SOA record)
+- `srv`: services, sorted by priority (SRV records)
+- `txt`: text records (TXT records)
 
 ### Advanced Commands
 
-- `spf`: queries TXT records and filters entries containing `v=spf1`
-- `dkim`: queries `TXT` on `<selector>._domainkey.<domain>` provided with `-s` or `--selector`
-- `dmarc`: queries `TXT` on `_dmarc.<domain>`
-- `m365`: queries various records for Microsoft 365 implementation
+- `spf`: SPF policy, from the TXT records of the domain containing `v=spf1`
+- `dkim`: DKIM key, from TXT on `<selector>._domainkey.<domain>`; the selector is required, with `-s`, `--selector=<selector>`
+- `dmarc`: DMARC policy, from TXT on `_dmarc.<domain>`
+- `m365`: Microsoft 365 records (MX, SPF, DKIM, DMARC, Autodiscover, Intune)
 
 ### Record Analysis
 
 With `-a`, `--analyze` the `spf`, `dkim` and `dmarc` commands break each record down into its terms or tags, describe what each one does and report common problems:
 
-- `spf`: qualifiers and mechanisms, DNS lookup count (limit 10), `+all`/`?all`, missing `all`, terms after `all`, deprecated `ptr`, unknown mechanisms
+- `spf`: qualifiers and mechanisms, DNS lookup count (limit 10), `+all`/`?all`, missing `all`, terms after `all`, deprecated `ptr`, unknown mechanisms, terms separated by characters other than spaces
 - `dmarc`: policies, alignment, report addresses and options, `p=none`, `pct` below 100, missing `rua`, invalid values
 - `dkim`: key type and size, revoked keys, weak RSA keys (below 2048 bits), testing mode, `sha1`-only hashes
 
@@ -86,13 +88,13 @@ The SPF lookup count only covers the queried record. With `-R`, `--recursive` (`
 
 ## Output Modes
 
-- Default: formatted ASCII table
-- `--simple`: plain lines, easier for scripting
-- `-c`, `--count`: adds a record index column/prefix
-- `-f`, `--full`: disables truncation of long values
-- `-r`, `--raw`: print raw output without formatting (equivalent to `--simple` and `--full`)
-- `-1`, `--first`: only print the first record of the answer
-- `-9`, `--last`: only print the last record of the answer
+- Default: ASCII tables, with long values truncated
+- `--simple`: plain lines instead of tables, easier for scripting
+- `-c`, `--count`: numbers the output rows, as a `#` column or a `1)` prefix
+- `-f`, `--full`: prints long values in full instead of truncating them
+- `-r`, `--raw`: same as `--simple --full`
+- `-1`, `--first`: prints only the first record of the answer
+- `-9`, `--last`: prints only the last record of the answer
 
 ## Examples
 
